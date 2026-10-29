@@ -7,7 +7,7 @@ import { noteName } from '../theory';
 export type MajorPosition = 'C' | 'A' | 'G' | 'E' | 'D';
 export function majorPosition(parentTonic: SpelledPitchClass, position: MajorPosition) {
   if (!['C', 'A', 'G', 'E', 'D'].includes(position)) throw new RangeError('Invalid CAGED position');
-  return new FretboardSystem().getScale({ root: noteName(parentTonic), type: 'major', box: { system: Systems.CAGED, box: position } }).filter(point => point.inBox);
+  return new FretboardSystem({ fretCount: 24 }).getScale({ root: noteName(parentTonic), type: 'major', box: { system: Systems.CAGED, box: position } }).filter(point => point.inBox);
 }
 
 /** Guitar strings 1–6 run high E to low E. Pitch is sounding, not written octave. */
@@ -17,3 +17,4 @@ export function validateFingeringEvent(event: FingeringEvent): void {
   const midi = Note.get(tuning[event.string - 1]).midi! + event.fret;
   if (!event.pitch || Note.get(`${noteName(event.pitch)}${event.pitch.octave}`).midi !== midi || event.pitch.midi !== midi) throw new RangeError('Fingering pitch does not match string and fret');
 }
+export { GuitarExercise, GuitarFretboard, ModeStaff, exerciseKeys, modeScaleKeys, notationKeySignature } from './views';

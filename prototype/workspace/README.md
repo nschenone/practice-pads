@@ -1,6 +1,6 @@
 # Throwaway workspace comparison
 
-The user chose **A — Practice desk** as the workspace direction. The current question is: **Can a serious musician quickly read the relationship between the selected mode and chord, including tonic, chord tones and characteristic tones, in this compact workspace?** This relationship revision has not yet been reviewed or approved. Guided supports newer players; self-guided keeps context optional for practiced players. B and C remain available for comparison. This prototype must never merge to main and is not production code.
+The user chose **A — Practice desk** as the workspace direction. The current question is: **Can a serious musician quickly read the relationship between the selected mode and chord, including tonic, chord tones and characteristic tones, in this compact workspace?** The current refinement asks whether the relationship view feels engaging and reads clearly at laptop size, without sacrificing useful musical context. This revision has not yet been reviewed or approved. Guided supports newer players; self-guided keeps context optional for practiced players. B and C remain available for comparison. This prototype must never merge to main and is not production code.
 
 From the repository root:
 

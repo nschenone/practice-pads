@@ -14,10 +14,12 @@
     "check": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
+    "@moonwave99/fretboard.js": "0.2.13",
     "@tonaljs/tonal": "4.10.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "tone": "15.1.22"
+    "tone": "15.1.22",
+    "vexflow": "5.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",

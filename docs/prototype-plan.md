@@ -1,6 +1,6 @@
 # Practice Pads prototype plan
 
-Status: scope and ticket breakdown approved for tracker setup. Implementation dispatch is not yet authorized.
+Status: implementation authorized. Execute the tracked tickets with isolated workers and independent review; keep the repository private and do not enable hosting.
 
 Execution tracker: [Build the first Practice Pads rehearsal prototype](https://github.com/nschenone/practice-pads/issues/1). Its native child issues and blocker relationships are the dependency authority.
 

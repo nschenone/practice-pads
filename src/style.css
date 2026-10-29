@@ -1,3 +1,5 @@
-:root { font-family: system-ui, sans-serif; color: #20242a; background: #f8f8f5; }
+:root { font-family: system-ui, sans-serif; background: #171713; color: #f1eee5; }
 body { margin: 0; }
-main { max-width: 72rem; margin: 0 auto; padding: 2rem; }
+.pp-study > section { min-width: 0; }
+.pp-study section section > div[aria-hidden="true"] { background: #fff; color: #171713; max-width: 100%; }
+.pp-visual svg { max-width: 100%; height: auto; }

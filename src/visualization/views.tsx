@@ -64,16 +64,20 @@ function Notation({ practice, fingering }: { practice: GuidedPractice; fingering
   const signature = notationKeySignature(practice);
   const keys = fingering ? exerciseKeys(fingering) : modeScaleKeys(practice);
   const keyList = keys.join(',');
+  const tabPositions = fingering ? JSON.stringify(fingering.events.map(({ string, fret }) => [string, fret])) : '';
   useEffect(() => {
     const el = host.current!;
     notation(el, keys, signature.key, fingering);
     return () => { el.replaceChildren(); };
-  }, [keyList, signature.key, fingering]);
+  }, [keyList, signature.key, fingering, tabPositions]);
   return <section><p>{fingering ? 'Guitar exercise: written one octave above sounding' : 'Mode scale: concert pitch'}; {signature.fallback ? `no key signature; explicit accidentals (unsupported parent key ${noteName(practice.parentTonic)})` : `parent key signature ${signature.key}`}.</p><div ref={host} style={{ overflowX: 'auto' }} aria-hidden="true"/><p>{keys.join(' · ')}</p>{fingering && <p>Tab, in provided order: {fingering.events.map(e => `string ${e.string} fret ${e.fret}`).join(' · ')}</p>}</section>;
 }
 export function ModeStaff({ practice }: { practice: GuidedPractice }) { return <Notation practice={practice}/>; }
 export function GuitarExercise({ practice, fingering }: { practice: GuidedPractice; fingering?: Fingering }) {
   if (!fingering || !fingering.events.length) return <p>Fingering and exercise pending review.</p>;
+  for (const event of fingering.events) {
+    if (!practice.mode.notes.some(note => note.pitchClass === event.pitch.pitchClass)) throw new RangeError('Fingering pitch is outside parent scale');
+  }
   return <section><p>Source: {fingering.source}; review: {fingering.review}.</p><Notation practice={practice} fingering={fingering}/></section>;
 }
 

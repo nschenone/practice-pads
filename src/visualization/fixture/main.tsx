@@ -10,11 +10,15 @@ const example: Fingering = { id: 'fixture-only', source: 'synthetic dev fixture;
   { string: 2, fret: 0, pitch: { letter: 'B', accidental: 0, pitchClass: 11, octave: 3, midi: 59 } },
   { string: 2, fret: 2, pitch: { letter: 'C', accidental: 1, pitchClass: 1, octave: 4, midi: 61 } },
 ] };
+const mutableExample: Fingering = { id: 'mutable-fixture', source: 'synthetic dev fixture; not instructional', review: 'unreviewed', events: [
+  { string: 1, fret: 0, pitch: { letter: 'E', accidental: 0, pitchClass: 4, octave: 4, midi: 64 } },
+] };
 function Fixture() {
+  const [alternate, setAlternate] = useState(false);
   const [degree, setDegree] = useState<1 | 3>(1);
   const d = SUPPORTED_TONICS.find(n => n.letter === 'D' && n.accidental === 0)!;
   const minor = guidedPractice(d, 'jazz-melodic-minor', degree, 'fixture-only');
   const major = guidedPractice(d, 'major', degree, 'C');
-  return <main style={{ fontFamily: 'sans-serif', maxWidth: 1000, margin: 'auto' }}><h1>Dev-only visualization fixture</h1><button onClick={() => setDegree(degree === 1 ? 3 : 1)}>Switch derivative mode</button><h2>{minor.mode.name} — {minor.chord.symbol}</h2><ModeStaff practice={minor}/><GuitarFretboard practice={minor} position="C" fingering={example}/><GuitarExercise practice={minor} fingering={example}/><h2>Upstream D major C template — {major.mode.name}</h2><GuitarFretboard practice={major} position="C"/></main>;
+  return <main style={{ fontFamily: 'sans-serif', maxWidth: 1000, margin: 'auto' }}><h1>Dev-only visualization fixture</h1><button onClick={() => setDegree(degree === 1 ? 3 : 1)}>Switch derivative mode</button><h2>{minor.mode.name} — {minor.chord.symbol}</h2><ModeStaff practice={minor}/><GuitarFretboard practice={minor} position="C" fingering={example}/><GuitarExercise practice={minor} fingering={example}/><h2>Same-reference tab regression</h2><button onClick={() => { mutableExample.events[0].string = alternate ? 1 : 2; mutableExample.events[0].fret = alternate ? 0 : 5; setAlternate(!alternate); }}>Move E4 on same fingering</button><div id="mutable-exercise"><GuitarExercise practice={major} fingering={mutableExample}/></div><h2>Upstream D major C template — {major.mode.name}</h2><GuitarFretboard practice={major} position="C"/></main>;
 }
 createRoot(document.getElementById('root')!).render(<Fixture/>);

@@ -54,3 +54,17 @@ describe('notation inputs', () => {
     expect(notationKeySignature(guidedPractice(root, 'major', 1))).toEqual({ key: 'C', fallback: true });
   });
 });
+
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { GuitarExercise } from './index';
+
+describe('GuitarExercise collection validation', () => {
+  it('rejects physically valid F natural in D major before engraving', () => {
+    const d = SUPPORTED_TONICS.find(n => n.letter === 'D' && n.accidental === 0)!;
+    const bad: Fingering = { id: 'bad', source: 'test', review: 'unreviewed', events: [
+      { string: 1, fret: 1, pitch: { letter: 'F', accidental: 0, pitchClass: 5, octave: 4, midi: 65 } },
+    ] };
+    expect(() => renderToStaticMarkup(createElement(GuitarExercise, { practice: guidedPractice(d, 'major', 1), fingering: bad }))).toThrow('outside parent scale');
+  });
+});

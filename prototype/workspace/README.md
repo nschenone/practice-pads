@@ -1,15 +1,11 @@
 # Throwaway workspace comparison
 
-The user chose **A — Practice desk** as the workspace direction. The current question is: **Can a serious musician quickly read the relationship between the selected mode and chord, including tonic, chord tones and characteristic tones, in this compact workspace?** The current refinement asks whether the relationship view feels engaging and reads clearly at laptop size, without sacrificing useful musical context. This revision has not yet been reviewed or approved. Guided supports newer players; self-guided keeps context optional for practiced players. B and C remain available for comparison. This prototype must never merge to main and is not production code.
+The user chose **A — Practice desk**. This revision adds a parent-tonic circle-of-fifths picker to explore the relationship between a mode and its chord. The selected parent remains distinct from the modal tonic; changing parent preserves the degree and physical fret window. The user verdict on this revision is pending. B and C remain for comparison. This prototype must never merge to main and is not production code.
 
-From the repository root:
+From the repository root, serve locally with `python3 -m http.server 4174 --bind 127.0.0.1` and open http://127.0.0.1:4174/prototype/workspace/?variant=A. The localhost-only switcher and left/right arrows cycle variants; state is in memory.
 
-```sh
-python3 -m http.server 4174 --bind 127.0.0.1
-```
+The picker offers twelve explicitly spelled parent tonics in circle-of-fifths order. The family is fixed to jazz melodic minor, with seven curated modes and literal stacked-seventh chord qualities, including half-diminished on VII. The static note spellings and chromas were generated using `@tonaljs/tonal` 4.10.0. To reproduce without installing in this repository, install that version in a scratch directory and run `NODE_PATH=/path/to/scratch/node_modules node prototype/workspace/generate-fixtures.cjs > prototype/workspace/fixtures.js`. This is a bounded fixture, not a general theory or chord engine. Only mode III's #4 and #5 are marked as distinctive tones. Chord markers show stacked degrees 1, 3, 5 and 7; shared notes alone do not establish harmonic suitability.
 
-Open http://127.0.0.1:4174/prototype/workspace/?variant=A (also `B` and `C`). The localhost-only floating switcher and left/right arrows cycle variants; state is in memory. The query parameter is shareable and browser back/forward works. The state disclosure records the current fixture settings.
+Playback is simulated and has **no audio**. The score is an illustrative ordered sequence, not music engraving. The standard-tuning pitch map is unreviewed and is not validated CAGED. Do not treat the fretboard as a canonical CAGED representation.
 
-The only parent fixture is D jazz melodic minor; there is no tonic/family picker or actual chord/root engine. III / F Lydian augmented is initially selected. Chord markers represent the fixture's stacked modal degrees 1, 3, 5 and 7; they are not a claim that note containment establishes harmonic suitability. C#m7b5 is the literal fixture chord, not an altered dominant. Only the explicitly requested F #4 and #5 characteristic tones are annotated. Playback is simulated and has **no audio**. The score is an illustrative ordered sequence, not music engraving. The standard-tuning pitch map is unreviewed and is not validated CAGED. Position stays fixed when changing mode.
-
-Capture the eventual relationship-readability verdict, rationale, and any requested changes on the implementation issue after user review. Do not promote this prototype directly to production.
+Capture the relationship-readability verdict, rationale, and requested changes after user review. Do not promote this prototype directly to production.

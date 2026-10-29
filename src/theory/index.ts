@@ -21,15 +21,15 @@ function spell(letterIndex: number, pitchClass: number): SpelledPitchClass {
   return { letter: letters[i], accidental: accidental as SpelledPitchClass['accidental'], pitchClass: mod(pitchClass) as PitchClass };
 }
 function familyData(family: ScaleFamily) {
-  if (!Object.hasOwn(families, family)) throw new RangeError('Unsupported scale family');
+  if (typeof family !== 'string' || !Object.hasOwn(families, family)) throw new RangeError('Unsupported scale family');
   return families[family];
 }
 function degreeIndex(degree: ModeDegree): number {
   if (!Number.isInteger(degree) || degree < 1 || degree > 7) throw new RangeError('Invalid mode degree');
   return degree - 1;
 }
-export const SUPPORTED_TONICS: readonly SpelledPitchClass[] = [spell(0, 0), spell(1, 1), spell(1, 2), spell(2, 3), spell(2, 4), spell(3, 5), spell(3, 6), spell(4, 7), spell(5, 8), spell(5, 9), spell(6, 10), spell(6, 11)];
-export const SCALE_FAMILIES: readonly ScaleFamily[] = ['major', 'jazz-melodic-minor', 'harmonic-minor'];
+export const SUPPORTED_TONICS: readonly Readonly<SpelledPitchClass>[] = Object.freeze([spell(0, 0), spell(1, 1), spell(1, 2), spell(2, 3), spell(2, 4), spell(3, 5), spell(3, 6), spell(4, 7), spell(5, 8), spell(5, 9), spell(6, 10), spell(6, 11)].map(note => Object.freeze(note)));
+export const SCALE_FAMILIES: readonly ScaleFamily[] = Object.freeze(['major', 'jazz-melodic-minor', 'harmonic-minor']);
 
 export function noteName(note: SpelledPitchClass): string {
   validateNote(note);
@@ -40,7 +40,7 @@ export function deriveMode(parentTonic: SpelledPitchClass, family: ScaleFamily, 
   const data = familyData(family), index = degreeIndex(degree), start = letters.indexOf(parentTonic.letter);
   const notes = data.intervals.map((interval, i) => spell((start + i) % 7, parentTonic.pitchClass + interval));
   const rotated = [...notes.slice(index), ...notes.slice(0, index)];
-  return { family, degree, name: data.names[index], tonic: rotated[0], notes: rotated };
+  return { family, degree, name: data.names[index], tonic: { ...rotated[0] }, notes: rotated };
 }
 /** Labels and characteristic degrees are relative to the mode tonic; degrees are one-based. */
 export function modeMetadata(family: ScaleFamily, degree: ModeDegree): { aliases: string[]; intervalLabels: string[]; characteristicDegrees: number[] } {
@@ -54,7 +54,7 @@ export function modeMetadata(family: ScaleFamily, degree: ModeDegree): { aliases
 }
 export function constructChord(root: SpelledPitchClass, quality: ChordQuality): Chord {
   validateNote(root);
-  if (!Object.hasOwn(chordIntervals, quality)) throw new RangeError('Unsupported chord quality');
+  if (typeof quality !== 'string' || !Object.hasOwn(chordIntervals, quality)) throw new RangeError('Unsupported chord quality');
   const start = letters.indexOf(root.letter);
   return { root: { ...root }, quality, symbol: noteName(root) + quality, tones: chordIntervals[quality].map((interval, i) => spell((start + 2 * i) % 7, root.pitchClass + interval)) };
 }
@@ -62,10 +62,16 @@ export function literalChord(mode: ModeIdentity): Chord {
   // Re-derive from its first note as a consistency check of the supplied mode collection.
   if (!mode || !Array.isArray(mode.notes) || mode.notes.length !== 7) throw new RangeError('Invalid mode');
   const data = familyData(mode.family), index = degreeIndex(mode.degree);
-  mode.notes.forEach(validateNote); validateNote(mode.tonic);
+  validateNote(mode.tonic);
   const start = letters.indexOf(mode.tonic.letter);
   const expected = data.intervals.map((_, i) => spell((start + i) % 7, mode.tonic.pitchClass + mod(data.intervals[(index + i) % 7] - data.intervals[index])));
-  if (mode.name !== data.names[index] || mode.notes.some((n, i) => n.letter !== expected[i].letter || n.accidental !== expected[i].accidental || n.pitchClass !== expected[i].pitchClass)) throw new RangeError('Inconsistent mode');
+  if (mode.name !== data.names[index]) throw new RangeError('Inconsistent mode');
+  for (let i = 0; i < expected.length; i++) {
+    if (!Object.hasOwn(mode.notes, i)) throw new RangeError('Inconsistent mode');
+    const n = mode.notes[i];
+    validateNote(n);
+    if (n.letter !== expected[i].letter || n.accidental !== expected[i].accidental || n.pitchClass !== expected[i].pitchClass) throw new RangeError('Inconsistent mode');
+  }
   return constructChord(mode.tonic, data.qualities[index]);
 }
 export function guidedPractice(parentTonic: SpelledPitchClass, family: ScaleFamily, degree: ModeDegree, positionId: string | null = null): GuidedPractice {
@@ -78,15 +84,22 @@ export function compatibleCandidates(root: SpelledPitchClass, quality: ChordQual
   const result: PitchCompatibleCandidate[] = [];
   for (const parentTonic of SUPPORTED_TONICS) for (const family of SCALE_FAMILIES) for (let degree = 1; degree <= 7; degree++) {
     const mode = deriveMode(parentTonic, family, degree as ModeDegree);
-    if (chord.tones.every(tone => mode.notes.some(note => note.pitchClass === tone.pitchClass))) result.push({ parentTonic: { ...parentTonic }, mode, chord });
+    if (chord.tones.every(tone => mode.notes.some(note => note.pitchClass === tone.pitchClass))) result.push({ parentTonic: { ...parentTonic }, mode, chord: { ...chord, root: { ...chord.root }, tones: chord.tones.map(tone => ({ ...tone })) } });
   }
   return result;
 }
 /** Ascending close-position chord, with root at the specified written octave. */
 export function playbackVoicing(chord: Chord, rootOctave = 3): PlaybackVoicing {
   if (!Number.isInteger(rootOctave)) throw new RangeError('Invalid octave');
+  if (!chord || typeof chord !== 'object') throw new RangeError('Invalid chord');
   const expected = constructChord(chord.root, chord.quality);
-  if (chord.symbol !== expected.symbol || !Array.isArray(chord.tones) || chord.tones.length !== 4 || chord.tones.some((n, i) => !n || n.letter !== expected.tones[i].letter || n.accidental !== expected.tones[i].accidental || n.pitchClass !== expected.tones[i].pitchClass)) throw new RangeError('Inconsistent chord');
+  if (chord.symbol !== expected.symbol || !Array.isArray(chord.tones) || chord.tones.length !== 4) throw new RangeError('Inconsistent chord');
+  for (let i = 0; i < expected.tones.length; i++) {
+    if (!Object.hasOwn(chord.tones, i)) throw new RangeError('Inconsistent chord');
+    const n = chord.tones[i];
+    validateNote(n);
+    if (n.letter !== expected.tones[i].letter || n.accidental !== expected.tones[i].accidental || n.pitchClass !== expected.tones[i].pitchClass) throw new RangeError('Inconsistent chord');
+  }
   const rootIndex = letters.indexOf(chord.root.letter);
   const pitches: Pitch[] = expected.tones.map((note, i) => {
     const octave = rootOctave + Math.floor((rootIndex + 2 * i) / 7);

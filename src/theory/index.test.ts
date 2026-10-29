@@ -60,6 +60,49 @@ describe('theory', () => {
     expect(candidates.some(x => literalChord(x.mode).symbol !== x.chord.symbol)).toBe(true);
     expect(() => compatibleCandidates(c, 'bad' as never)).toThrow();
   });
+  it('protects catalog and returned values from mutations affecting later calls', () => {
+    const before = compatibleCandidates(f, 'maj7#5');
+    expect(Reflect.set(SUPPORTED_TONICS[0], 'pitchClass', 1)).toBe(false);
+    expect(Reflect.set(SUPPORTED_TONICS, '0', d)).toBe(false);
+    expect(Reflect.set(SCALE_FAMILIES, '0', 'harmonic-minor')).toBe(false);
+    const metadata = modeMetadata('jazz-melodic-minor', 3);
+    metadata.characteristicDegrees.push(7);
+    const altered = modeMetadata('jazz-melodic-minor', 7);
+    altered.aliases[0] = 'changed';
+    expect(modeMetadata('jazz-melodic-minor', 3).characteristicDegrees).toEqual([4, 5]);
+    expect(modeMetadata('jazz-melodic-minor', 7).aliases).toEqual(['Altered']);
+    const results = compatibleCandidates(f, 'maj7#5');
+    results[0].chord.tones[0].pitchClass = 0;
+    expect(results[1].chord).toEqual(before[1].chord);
+    results[0].mode.tonic.pitchClass = 0;
+    expect(results[0].mode.notes[0]).toEqual(before[0].mode.notes[0]);
+    expect(compatibleCandidates(f, 'maj7#5')).toEqual(before);
+  });
+  it('rejects missing and malformed public inputs and every missing indexed note', () => {
+    for (const missing of [null, undefined]) {
+      expect(() => playbackVoicing(missing as never)).toThrow(RangeError);
+      expect(() => literalChord(missing as never)).toThrow(RangeError);
+      expect(() => noteName(missing as never)).toThrow(RangeError);
+      expect(() => deriveMode(missing as never, 'major', 1)).toThrow(RangeError);
+      expect(() => constructChord(missing as never, 'maj7')).toThrow(RangeError);
+      expect(() => compatibleCandidates(missing as never, 'maj7')).toThrow(RangeError);
+    }
+    expect(() => deriveMode(c, ['major'] as never, 1)).toThrow(RangeError);
+    expect(() => constructChord(c, ['maj7'] as never)).toThrow(RangeError);
+    const mode = deriveMode(c, 'major', 1), chord = constructChord(c, 'maj7');
+    for (let i = 0; i < 7; i++) {
+      const sparse = [...mode.notes]; delete sparse[i];
+      expect(() => literalChord({ ...mode, notes: sparse })).toThrow(RangeError);
+      const undefinedNote = [...mode.notes]; undefinedNote[i] = undefined as never;
+      expect(() => literalChord({ ...mode, notes: undefinedNote })).toThrow(RangeError);
+    }
+    for (let i = 0; i < 4; i++) {
+      const sparse = [...chord.tones]; delete sparse[i];
+      expect(() => playbackVoicing({ ...chord, tones: sparse })).toThrow(RangeError);
+      const undefinedTone = [...chord.tones]; undefinedTone[i] = undefined as never;
+      expect(() => playbackVoicing({ ...chord, tones: undefinedTone })).toThrow(RangeError);
+    }
+  });
   it('computes written octave crossing and MIDI', () => {
     const bSharp: SpelledPitchClass = { letter: 'B', accidental: 1, pitchClass: 0 };
     const voicing = playbackVoicing(constructChord(bSharp, 'm7'), 3);

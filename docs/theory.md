@@ -1,6 +1,6 @@
 # Theory API
 
-Import named exports from `src/theory`. All functions are pure and reject invalid or inconsistent inputs with `RangeError`. Spelling uses ASCII `b` and `#`, up to double accidentals; a requested spelling requiring more is rejected. `SUPPORTED_TONICS` is the ordered conventional selector: C, Db, D, Eb, E, F, F#, G, Ab, A, Bb, B. Other consistent spelled roots are accepted when their resulting notes fit the double-accidental limit. `SCALE_FAMILIES` gives family order.
+Import named exports from `src/theory`. All functions are pure and reject invalid or inconsistent inputs with `RangeError`. Spelling uses ASCII `b` and `#`, up to double accidentals; a requested spelling requiring more is rejected. `SUPPORTED_TONICS` is the ordered conventional selector: C, Db, D, Eb, E, F, F#, G, Ab, A, Bb, B. Other consistent spelled roots are accepted when their resulting notes fit the double-accidental limit. `SCALE_FAMILIES` gives family order. Both catalog arrays and tonic entries are runtime-frozen and readonly; returned modes, chords, candidates and metadata are caller-owned values.
 
 ```ts
 const practice = guidedPractice(d, 'jazz-melodic-minor', 3, 'position-1');

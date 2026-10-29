@@ -11,6 +11,8 @@ const settings = {
   Organ: { oscillator: { type: 'sine' as const }, envelope: { attack: 0.12, decay: 0.2, sustain: 0.8, release: 0.5 } },
 };
 const MAX_NOTES = 8;
+const MAX_VOICES = 16;
+const FADE_SECONDS = 0.08;
 const frequency = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 
 /** One instance per player, retained across UI renders. */
@@ -26,15 +28,25 @@ export class PadAudioEngine {
   private pending: Promise<void> | undefined;
   private gain?: Tone.Gain;
   private synth?: Tone.PolySynth;
+  private bankGain?: Tone.Gain;
+  // Count every attack, not just active notes: released voices remain allocated until silent.
+  private attacks = 0;
+  private transition?: number;
+  private transitionVersion = 0;
   private raw?: AudioContext;
   private onState = () => {
-    if (this.status.state === 'playing' && this.raw?.state !== 'running') {
+    if (this.raw?.state === 'running') return;
+    this.destroyBank();
+    if (this.disposed) { this.finishDispose(); return; }
+    if (this.status.state === 'playing') {
       this.generation++;
-      this.synth?.releaseAll();
-      this.held.clear();
       this.publish({ state: 'error', message: 'Audio was interrupted. Press Play to retry.' });
     }
   };
+  private finishDispose() {
+    this.raw?.removeEventListener('statechange', this.onState);
+    this.gain?.dispose(); this.gain = undefined;
+  }
   private publish(status: PlaybackStatus) {
     this.status = status;
     this.listeners.forEach(listener => listener(status));
@@ -44,28 +56,59 @@ export class PadAudioEngine {
     return () => this.listeners.delete(listener);
   }
   setVoicing(voicing: PlaybackVoicing): void {
-    const values = voicing.pitches.map(p => p.midi);
-    if (values.some(n => !Number.isInteger(n) || n < 0 || n > 127) || new Set(values).size > MAX_NOTES) throw new RangeError('Voicing requires at most eight distinct MIDI notes (0–127).');
+    if (!voicing || !Array.isArray(voicing.pitches)) throw new TypeError('Voicing must contain a dense pitch array');
+    const values: number[] = [];
+    for (let i = 0; i < voicing.pitches.length; i++) {
+      const p = voicing.pitches[i];
+      if (!(i in voicing.pitches) || !p || typeof p !== 'object' ||
+          !['A', 'B', 'C', 'D', 'E', 'F', 'G'].includes(p.letter) ||
+          !Number.isInteger(p.accidental) || p.accidental < -2 || p.accidental > 2 ||
+          !Number.isInteger(p.pitchClass) || p.pitchClass < 0 || p.pitchClass > 11 ||
+          !Number.isInteger(p.octave) || !Number.isInteger(p.midi) || p.midi < 0 || p.midi > 127) {
+        throw new TypeError('Voicing contains an invalid pitch');
+      }
+      values.push(p.midi);
+    }
+    if (new Set(values).size > MAX_NOTES) throw new RangeError('Voicing requires at most eight distinct MIDI notes');
     this.notes = new Set(values);
-    if (this.status.state === 'playing') this.sync();
+    if (this.status.state === 'playing' && this.transition === undefined) this.sync();
   }
   private sync() {
-    for (const n of this.held) if (!this.notes.has(n)) this.synth?.triggerRelease(frequency(n));
-    for (const n of this.notes) if (!this.held.has(n)) this.synth?.triggerAttack(frequency(n));
+    const additions = [...this.notes].filter(n => !this.held.has(n));
+    if (this.attacks + additions.length > MAX_VOICES) { this.fadeBank(); return; }
+    for (const n of this.held) if (!this.notes.has(n)) this.synth!.triggerRelease(frequency(n));
+    for (const n of additions) { this.synth!.triggerAttack(frequency(n)); this.attacks++; }
     this.held = new Set(this.notes);
   }
   private createBank() {
-    this.synth = new Tone.PolySynth({ voice: Tone.Synth, maxPolyphony: 16, options: settings[this.preset] }).connect(this.gain!);
+    this.bankGain = new Tone.Gain(0).connect(this.gain!);
+    this.synth = new Tone.PolySynth({ voice: Tone.Synth, maxPolyphony: MAX_VOICES, options: settings[this.preset] }).connect(this.bankGain);
+    this.bankGain.gain.linearRampTo(1, FADE_SECONDS);
+  }
+  private destroyBank() {
+    if (this.transition !== undefined) Tone.getContext().clearTimeout(this.transition);
+    this.transition = undefined; this.transitionVersion++;
+    this.synth?.dispose(); this.bankGain?.dispose();
+    this.synth = undefined; this.bankGain = undefined; this.attacks = 0; this.held.clear();
+  }
+  private fadeBank() {
+    if (!this.synth || this.transition !== undefined) return;
+    this.bankGain!.gain.linearRampTo(0, FADE_SECONDS);
+    const context = Tone.getContext();
+    const version = ++this.transitionVersion;
+    // Tone's clock fires lookAhead early; wait until the fade has actually rendered.
+    this.transition = context.setTimeout(() => {
+      if (version !== this.transitionVersion) return;
+      this.destroyBank();
+      if (this.disposed) this.finishDispose();
+      else if (this.status.state === 'playing') { this.createBank(); this.sync(); }
+    }, FADE_SECONDS + context.lookAhead);
   }
   setPreset(preset: PadPreset): void {
     if (!padPresets.includes(preset)) throw new RangeError('Unknown pad preset');
     if (preset === this.preset) return;
     this.preset = preset;
-    if (this.synth) {
-      // A single bank bounds overlap, including rapid changes; replacement is immediate.
-      this.synth.dispose(); this.synth = undefined; this.held.clear();
-      if (this.status.state === 'playing') { this.createBank(); this.sync(); }
-    }
+    if (this.synth) this.fadeBank();
   }
   setVolume(volume: number): void {
     if (!Number.isFinite(volume)) throw new RangeError('Volume must be finite');
@@ -89,7 +132,8 @@ export class PadAudioEngine {
       if (!this.raw) { this.raw = raw; raw.addEventListener('statechange', this.onState); }
       if (!this.gain) this.gain = new Tone.Gain(this.volume * 0.12).toDestination();
       if (!this.synth) this.createBank();
-      this.sync(); this.publish({ state: 'playing' });
+      if (this.transition === undefined) this.sync();
+      this.publish({ state: 'playing' });
     }).catch((error: unknown) => {
       if (!this.disposed && generation === this.generation) this.publish({ state: 'error', message: error instanceof Error ? error.message : 'Audio activation failed' });
     }).finally(() => { if (this.pending === pending) this.pending = undefined; });
@@ -99,12 +143,13 @@ export class PadAudioEngine {
   stop(): void {
     if (this.disposed) return;
     this.generation++; this.pending = undefined;
-    this.synth?.releaseAll(); this.held.clear(); this.publish({ state: 'stopped' });
+    this.fadeBank(); this.publish({ state: 'stopped' });
   }
   dispose(): void {
     if (this.disposed) return;
     this.stop(); this.disposed = true;
-    this.raw?.removeEventListener('statechange', this.onState);
-    this.synth?.dispose(); this.gain?.dispose(); this.listeners.clear();
+    if (this.raw?.state !== 'running') this.destroyBank();
+    if (!this.synth) this.finishDispose();
+    this.listeners.clear();
   }
 }

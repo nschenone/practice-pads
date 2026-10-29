@@ -1,3 +1,4 @@
+import { Chord as TonalChord, Interval, Note, Scale } from '@tonaljs/tonal';
 import { describe, expect, it } from 'vitest';
 import { compatibleCandidates, constructChord, deriveMode, guidedPractice, literalChord, modeMetadata, noteName, playbackVoicing, SCALE_FAMILIES, SUPPORTED_TONICS } from './index';
 import type { ModeDegree, SpelledPitchClass } from '../contracts';
@@ -109,4 +110,18 @@ describe('theory', () => {
     expect(voicing.pitches.map(p => [noteName(p), p.octave, p.midi])).toEqual([['B#',3,60],['D#',4,63],['F##',4,67],['A#',4,70]]);
     expect(() => playbackVoicing(constructChord(c, 'maj7'), 10)).toThrow();
   });
+});
+
+it('cross-checks Tonal scale, interval, chord and written-octave APIs', () => {
+  const parent = Scale.get('D melodic minor');
+  expect(names(deriveMode(d, 'jazz-melodic-minor', 1).notes)).toEqual(parent.notes);
+  expect(names(constructChord(f, 'maj7#5').tones)).toEqual(TonalChord.getChord('maj7#5', 'F').notes);
+  const seventh = deriveMode(d, 'jazz-melodic-minor', 7);
+  expect(names(seventh.notes)).toEqual(['C#', 'D', 'E', 'F', 'G', 'A', 'B']);
+  expect(Scale.get('C# altered').notes).not.toEqual(names(seventh.notes));
+  expect(Note.transpose('C#', Interval.distance('C#', 'F'))).toBe('F');
+  expect(names(literalChord(seventh).tones)).toEqual(TonalChord.getChord('m7b5', 'C#').notes);
+  const cb: SpelledPitchClass = { letter: 'C', accidental: -1, pitchClass: 11 };
+  const pitch = playbackVoicing(constructChord(cb, 'maj7'), 4).pitches[0];
+  expect([pitch.octave, pitch.midi]).toEqual([Note.get('Cb4').oct, Note.get('Cb4').midi]);
 });

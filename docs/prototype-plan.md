@@ -1,6 +1,8 @@
 # Practice Pads prototype plan
 
-Status: proposed; not an approved implementation DAG.
+Status: scope and ticket breakdown approved for tracker setup. Implementation dispatch is not yet authorized.
+
+Execution tracker: [Build the first Practice Pads rehearsal prototype](https://github.com/nschenone/practice-pads/issues/1). Its native child issues and blocker relationships are the dependency authority.
 
 ## Goal
 
@@ -32,7 +34,7 @@ Fretboard with modal tonic distinguished by shape and color
 
 Changing derivative mode updates the chord, modal name, staff scale and modal-tonic emphasis. It retains the parent scale and selected physical guitar position. Changes while stopped never start playback.
 
-Self-guided practice replaces the parent/mode controls with explicit root and chord-quality selection and a displayed chord symbol. It keeps the player and lists compatible modes with parent scales. No fretboard in this workflow, matching the brief. A structured selector is the proposed first interpretation of chord input; arbitrary text parsing is not required unless the owner prefers it. Suggestions are candidates based on documented matching rules, not claims of universal harmonic suitability.
+Self-guided practice replaces the parent/mode controls with explicit root and chord-quality selection and a displayed chord symbol. It keeps the player and lists compatible modes with parent scales. No fretboard in this workflow, matching the brief. A structured selector is the agreed first interpretation of chord input; arbitrary text parsing is not required. Suggestions are candidates based on documented matching rules, not claims of universal harmonic suitability.
 
 Target catalog: major, jazz melodic minor and harmonic minor; all twelve sounding tonics with a deliberate spelling policy; approximately five synthesis presets. Keep correct spellings separate from audio pitch identity. A generic pitch map may be useful during development, but must not be labeled a validated CAGED fingering.
 
@@ -63,12 +65,13 @@ The acceptance scenario selects D jazz melodic minor, starts Dm(maj7), switches 
 
 No backend, accounts, database, paid services, router, analytics or sampled instrument library. Use synthesized presets. Prepare the Pages base path, but do not enable public hosting or switch repository visibility without approval.
 
-## Resolve before admitting implementation lanes
+## Admission decisions
 
-- Confirm the one-workspace layout and structured chord input are acceptable prototype choices.
-- Agree on the first fingering source/reviewer and how unreviewed positions are displayed.
-- Define self-guided chord compatibility and literal versus alternate harmonic applications in the theory ticket contract.
-- Lock minimal cross-module types in the scaffold ticket before parallel work; avoid abstract engine/plugin frameworks.
+The owner approved the one-workspace prototype, structured chord selectors, and explicit labeling of guitar positions awaiting the friend's review. Unreviewed positions must not be presented as validated CAGED fingerings.
+
+Proposed implementation rule: self-guided suggestions initially require all selected chord pitch classes to be contained in a candidate mode. Label this as pitch compatibility, not a universal harmonic recommendation. Keep literal seventh chords separate from any curated alternate applications. If a chord has no matches among the three supported families, report that honestly rather than silently substituting another chord.
+
+The scaffold ticket must fix narrow cross-module types before parallel work; avoid abstract engine/plugin frameworks. The visualization ticket must document the source and review state of each fingering. Human approval of CAGED correctness remains a separate acceptance gate; it does not block rendering an explicitly unreviewed pitch map.
 
 Use the orchestrate-tickets skill only after this scope and the GitHub parent/child DAG are approved. Use Terra with medium thinking for implementation delegation unless directed otherwise. The coordinator retains repository visibility and publication authority.
 

@@ -48,8 +48,6 @@ export function LocalMappingControls({ practice, context, mapping }: { practice:
     <details><summary>Edit position</summary>
     <p>{context.position} position · changes stay local</p>
     <FingeringEditor key={contextKey(context)} practice={practice} context={context} value={mapping.value} onChange={mapping.change}/>
-    <p role="status">{mapping.dirty ? 'Unsaved draft. ' : ''}{mapping.message}</p>
-    {mapping.error && <p role="alert">{mapping.error}</p>}
     <div className="pp-mapping-actions">
       <button type="button" disabled={!mapping.value} onClick={mapping.save}>Save this position</button>
       <button type="button" onClick={mapping.reload}>Discard draft / reload saved</button>
@@ -61,5 +59,7 @@ export function LocalMappingControls({ practice, context, mapping }: { practice:
       <label>Mapping JSON<textarea rows={6} value={mapping.json} onChange={event => mapping.setJSON(event.target.value)} /></label>
       <div className="pp-mapping-actions"><button type="button" onClick={mapping.exportJSON}>Export saved mappings</button><button type="button" onClick={mapping.importJSON}>Import mappings</button></div>
     </details>
+    <p role="status">{mapping.dirty ? 'Unsaved draft. ' : ''}{mapping.message}</p>
+    {mapping.error && <p role="alert">{mapping.error}</p>}
   </section>;
 }

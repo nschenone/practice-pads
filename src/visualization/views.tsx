@@ -5,7 +5,7 @@ import { Note } from '@tonaljs/tonal';
 import { Accidental, Formatter, Renderer, Stave, StaveNote, TabNote, TabStave, KeySignature, Voice } from 'vexflow';
 import type { Fingering, GuidedPractice } from '../contracts';
 import { modeMetadata, noteName } from '../theory';
-import { majorPosition, minorScaleMap, validateFingeringEvent, type MajorPosition } from './index';
+import { majorPosition, minorPosition, MINOR_POSITION_SOURCE, validateFingeringEvent, type MajorPosition } from './index';
 
 export function notationKeySignature(practice: GuidedPractice) {
   const key = noteName(practice.parentTonic) + (practice.family === 'major' ? '' : 'm');
@@ -85,18 +85,18 @@ function Notation({ practice, fingering }: { practice: GuidedPractice; fingering
 export function ModeStaff({ practice }: { practice: GuidedPractice }) { return <Notation practice={practice}/>; }
 export function GuitarExercise({ practice, fingering }: { practice: GuidedPractice; fingering?: Fingering }) {
   if (fingering?.review === 'rejected') return <p>Fingering rejected; exercise unavailable.</p>;
-  if (!fingering || !fingering.events.length) return <p>Fingering and exercise pending review.</p>;
+  if (!fingering || !fingering.events.length) return <p>Add a sequence in Edit position to see staff and tab.</p>;
   for (const event of fingering.events) {
     if (!practice.mode.notes.some(note => note.pitchClass === event.pitch.pitchClass)) throw new RangeError('Fingering pitch is outside parent scale');
   }
   return <section><Notation practice={practice} fingering={fingering}/><details><summary>Exercise info</summary><p>Written one octave above sounding. Source: {fingering.source}; review: {fingering.review}.</p></details></section>;
 }
 
-/** Major positions are upstream, unreviewed; minor positions require supplied events. */
+/** Reference positions are physical maps; only supplied events define an exercise. */
 export function GuitarFretboard({ practice, position, fingering }: { practice: GuidedPractice; position: MajorPosition; fingering?: Fingering }) {
   const host = useRef<HTMLDivElement>(null);
   const usable = fingering && fingering.review !== 'rejected' && fingering.events.length > 0;
-  const points = usable ? fingering.events.map(event => { validateFingeringEvent(event); return { string: event.string, fret: event.fret, chroma: event.pitch.pitchClass }; }) : practice.family === 'major' ? majorPosition(practice.parentTonic, position) : minorScaleMap(practice.parentTonic, practice.family);
+  const points = usable ? fingering.events.map(event => { validateFingeringEvent(event); return { string: event.string, fret: event.fret, chroma: event.pitch.pitchClass }; }) : practice.family === 'major' ? majorPosition(practice.parentTonic, position) : minorPosition(practice.parentTonic, practice.family, position);
   const metadata = modeMetadata(practice.family, practice.mode.degree);
   const labels = points.map(p => {
     const i = practice.mode.notes.findIndex(n => n.pitchClass === p.chroma);
@@ -110,21 +110,24 @@ export function GuitarFretboard({ practice, position, fingering }: { practice: G
     const el = host.current!;
     let board: Fretboard | undefined;
     let width = -1;
+    const firstFret = Math.min(...labels.map(p => p.fret));
+    const fretCount = Math.max(4, Math.max(...labels.map(p => p.fret)) - Math.max(0, firstFret - 1));
+    const minimumWidth = Math.max(400, fretCount * 44);
     const render = () => {
-      const nextWidth = Math.max(720, el.clientWidth);
+      const nextWidth = Math.max(minimumWidth - 40, el.clientWidth);
       if (width === nextWidth) return;
       width = nextWidth;
       board?.removeEventListeners();
       el.replaceChildren();
       if (!labels.length) return;
-      const fretCount = Math.max(12, ...labels.map(p => p.fret));
-      board = new Fretboard({ el, fretCount, showFretNumbers: true, dotFill: 'var(--pp-music-surface, #f3ead8)', dotStrokeColor: 'var(--pp-music-ink, #302c23)', dotText: (p: { short: string }) => p.short, width, height: 240, dotSize: 26, dotTextSize: 14 });
+      board = new Fretboard({ el, fretCount, crop: true, scaleFrets: false, showFretNumbers: true, dotFill: 'var(--pp-music-surface, #f3ead8)', dotStrokeColor: 'var(--pp-music-ink, #302c23)', dotText: (p: { short: string }) => p.short, width, height: 240, dotSize: 26, dotTextSize: 14 });
       board.setDots(labels).render();
+      el.querySelector('svg')!.style.minWidth = `${minimumWidth}px`;
     };
     render();
     const observer = new ResizeObserver(render);
     observer.observe(el);
     return () => { observer.disconnect(); board?.removeEventListeners(); el.replaceChildren(); };
   }, [labelKey]);
-  return <section><div className="pp-fretboard-scroll" ref={host} aria-hidden="true"/><p className="pp-visually-hidden">String 1 is high E; fret 0 is open. Asterisk marks modal tonic. {labels.map(p => `string ${p.string}, fret ${p.fret}: ${p.label}`).join('; ')}.</p><details><summary>Diagram info</summary><p>{usable ? `Source: ${fingering.source}; review: ${fingering.review}.` : practice.family === 'major' ? `fretboard.js ${position} major template; source-provided, not teacher-reviewed.` : `Scale-note map, not a CAGED fingering; frets 0–12; ${position} mapping pending${fingering?.review === 'rejected' ? ' (supplied mapping rejected)' : ''}.`} String 1 is high E; fret 0 is open. * marks modal tonic.</p></details></section>;
+  return <section><div className="pp-fretboard-scroll" ref={host} aria-hidden="true"/><p className="pp-visually-hidden">String 1 is high E; fret 0 is open. Asterisk marks modal tonic. {labels.map(p => `string ${p.string}, fret ${p.fret}: ${p.label}`).join('; ')}.</p><details><summary>Diagram info</summary><p>{usable ? `Source: ${fingering.source}; review: ${fingering.review}.` : practice.family === 'major' ? `fretboard.js ${position} major template; source-provided, not teacher-reviewed.` : `${MINOR_POSITION_SOURCE.author} reference, ${position} shape; transcription and shape identity not independently musician-reviewed${fingering?.review === 'rejected' ? '; rejected local mapping not used' : ''}.`} String 1 is high E; fret 0 is open. * marks modal tonic.</p></details></section>;
 }

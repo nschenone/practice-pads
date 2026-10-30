@@ -45,8 +45,8 @@ export function useLocalMapping(context: FingeringContext | undefined) {
 
 export function LocalMappingControls({ practice, context, mapping }: { practice: GuidedPractice; context: FingeringContext; mapping: ReturnType<typeof useLocalMapping> }) {
   return <section className="pp-panel pp-mapping" aria-label="Local position configuration">
-    <h2>Local position configuration</h2>
-    <p>For this parent key, family and {context.position} position. Drafts stay while you switch positions; save to keep them after a reload. Nothing is uploaded.</p>
+    <details><summary>Edit position</summary>
+    <p>{context.position} position · changes stay local</p>
     <FingeringEditor key={contextKey(context)} practice={practice} context={context} value={mapping.value} onChange={mapping.change}/>
     <p role="status">{mapping.dirty ? 'Unsaved draft. ' : ''}{mapping.message}</p>
     {mapping.error && <p role="alert">{mapping.error}</p>}
@@ -55,6 +55,7 @@ export function LocalMappingControls({ practice, context, mapping }: { practice:
       <button type="button" onClick={mapping.reload}>Discard draft / reload saved</button>
       <button type="button" onClick={mapping.reset}>Reset this position</button>
     </div>
+    </details>
     <details><summary>Import / export saved mappings</summary>
       <p>Copy this JSON as a backup or paste mappings to import. Import replaces matching saved positions, not the entire collection. A local review flag is not teacher approval.</p>
       <label>Mapping JSON<textarea rows={6} value={mapping.json} onChange={event => mapping.setJSON(event.target.value)} /></label>

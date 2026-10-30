@@ -3,7 +3,7 @@ export type PitchClass = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
 export type SpelledPitchClass = { letter: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'; accidental: -2 | -1 | 0 | 1 | 2; pitchClass: PitchClass };
 /** MIDI note number identifies the actual sounding pitch, including octave. */
 export type Pitch = SpelledPitchClass & { octave: number; midi: number };
-export type ScaleFamily = 'major' | 'jazz-melodic-minor' | 'harmonic-minor';
+export type ScaleFamily = 'major' | 'natural-minor' | 'jazz-melodic-minor' | 'harmonic-minor';
 export type ModeDegree = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type ModeIdentity = { family: ScaleFamily; degree: ModeDegree; name: string; tonic: SpelledPitchClass; notes: SpelledPitchClass[] };
 export type ChordQuality = 'maj7' | 'm7' | '7' | 'm7b5' | 'm(maj7)' | 'maj7#5' | 'dim7';

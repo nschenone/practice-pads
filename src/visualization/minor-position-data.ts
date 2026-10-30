@@ -4,11 +4,20 @@ import type { MajorPosition } from './index';
 /** C-root chart coordinates, strings 1 (high E) through 6 (low E). Not ordered exercises. */
 export const MINOR_POSITION_SOURCE = {
   author: 'Jens Larsen',
+  naturalAuthor: 'GuitarScale.org',
+  natural: 'https://www.guitarscale.org/c-minor.html',
   melodic: 'https://jenslarsen.nl/WP/wp-content/uploads/2019/09/CAGED-Melodic-Minor.jpg',
   harmonic: 'https://jenslarsen.nl/WP/wp-content/uploads/2019/09/CAGED-Harmonic-minor.jpg',
 } as const;
 
 export const C_MINOR_POSITION_FRETS: Record<Exclude<ScaleFamily, 'major'>, Record<MajorPosition, readonly (readonly number[])[]>> = {
+  'natural-minor': {
+    E: [[8,10,11],[8,9,11],[7,8,10],[8,10],[8,10,11],[8,10,11]],
+    D: [[10,11,13],[11,13],[10,12,13],[10,12,13],[10,11,13],[10,11,13]],
+    C: [[13,15,16],[13,15,16],[12,13,15],[12,13,15],[13,15],[13,15,16]],
+    A: [[3,4,6],[3,4,6],[3,5],[3,5,6],[3,5,6],[3,4,6]],
+    G: [[6,8],[6,8,9],[5,7,8],[5,6,8],[5,6,8],[6,8]],
+  },
   'jazz-melodic-minor': {
     A: [[3,5],[3,4,6],[2,4,5],[3,5],[2,3,5,6],[3,5]],
     G: [[5,7,8],[6,8],[4,5,7,8],[5,7],[5,6,8],[5,7,8]],

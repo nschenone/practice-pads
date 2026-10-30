@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { minorPosition } from './index';
-import { deriveMode, guidedPractice, SUPPORTED_TONICS } from '../theory';
+import { minorPosition, parentScaleMap, minorScaleMap } from './index';
+import { deriveMode, guidedPractice, SCALE_FAMILIES, SUPPORTED_TONICS } from '../theory';
 
-const families = ['jazz-melodic-minor', 'harmonic-minor'] as const;
+const families = ['natural-minor', 'jazz-melodic-minor', 'harmonic-minor'] as const;
 const positions = ['C', 'A', 'G', 'E', 'D'] as const;
 const c = SUPPORTED_TONICS[0];
 const roots: Record<typeof positions[number], string[]> = {
@@ -11,6 +11,22 @@ const roots: Record<typeof positions[number], string[]> = {
 };
 
 describe('source-derived minor positions', () => {
+  it('provides full-neck parent context through fret 24 for every family', () => {
+    for (const family of SCALE_FAMILIES) for (const tonic of SUPPORTED_TONICS) {
+      const points = parentScaleMap(tonic, family);
+      const pitches = new Set<number>(deriveMode(tonic, family, 1).notes.map(note => note.pitchClass));
+      expect(points.every(point => point.chroma !== undefined && pitches.has(point.chroma) && point.fret >= 0 && point.fret <= 24)).toBe(true);
+      expect(new Set(points.map(point => point.chroma))).toEqual(pitches);
+      expect(new Set(points.map(point => `${point.string}:${point.fret}`)).size).toBe(points.length);
+    }
+    const a = SUPPORTED_TONICS.find(note => note.letter === 'A' && note.accidental === 0)!;
+    const points = parentScaleMap(a, 'natural-minor');
+    expect(points).toHaveLength(90);
+    expect(points.filter(point => point.fret === 0)).toHaveLength(6);
+    expect(points.filter(point => point.fret === 24)).toHaveLength(6);
+    expect(() => minorScaleMap(a, 'major' as never)).toThrow(RangeError);
+    expect(() => parentScaleMap(a, 'bad' as never)).toThrow(RangeError);
+  });
   it('matches the C chart root anchors and named chord form identities', () => {
     for (const family of families) for (const position of positions) {
       const points = minorPosition(c, family, position);
@@ -32,7 +48,7 @@ describe('source-derived minor positions', () => {
     }
   });
   it('retains physical points for the requested derivative modes', () => {
-    for (const [letter, family, degree, modeRoot] of [['D','jazz-melodic-minor',3,'F'], ['C','harmonic-minor',6,'Ab'], ['D','harmonic-minor',6,'Bb']] as const) {
+    for (const [letter, family, degree, modeRoot] of [['A','natural-minor',3,'C'], ['D','natural-minor',6,'Bb'], ['D','jazz-melodic-minor',3,'F'], ['C','harmonic-minor',6,'Ab'], ['D','harmonic-minor',6,'Bb']] as const) {
       const tonic = SUPPORTED_TONICS.find(n => n.letter === letter && n.accidental === 0)!;
       const base = guidedPractice(tonic, family, 1), mode = guidedPractice(tonic, family, degree);
       expect(mode.mode.tonic.letter + (mode.mode.tonic.accidental === -1 ? 'b' : '')).toBe(modeRoot);

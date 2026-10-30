@@ -25,6 +25,10 @@ export default function App() {
   const [minorFamily, setMinorFamily] = useState<ScaleFamily>('jazz-melodic-minor');
   const [degree, setDegree] = useState<ModeDegree>(3); const [position, setPosition] = useState<MajorPosition>('C');
   const [view, setView] = useState<'diagram' | 'exercise'>('diagram');
+  const [neckView, setNeckView] = useState<'position' | 'full'>(() => {
+    try { return window.localStorage.getItem('practice-pads-neck-view') === 'full' ? 'full' : 'position'; }
+    catch { return 'position'; }
+  });
   const [preset, setPreset] = useState<PadPreset>('Warm'); const [volume, setVolume] = useState(0.2);
   const [status, setStatus] = useState<PlaybackStatus>({ state: 'stopped' }); const [error, setError] = useState('');
   const engine = useRef<PadAudioEngine | null>(null);
@@ -52,7 +56,7 @@ export default function App() {
     chord={chord.symbol} modeName={`${noteName(practice.mode.tonic)} ${practice.mode.name}`}
     notes={practice.mode.notes.map((n, i) => ({ name: noteName(n), interval: metadata.intervalLabels[i], tonic: i === 0, chordTone: chord.tones.some(t => t.pitchClass === n.pitchClass), distinctiveRole: metadata.characteristicDegrees.includes(i + 1) ? `Distinctive ${metadata.intervalLabels[i]}` : undefined }))}
     status={status} onPlay={() => { if (engine.current) void engine.current.play().catch(e => setError(String(e))); }} onStop={() => engine.current?.stop()} preset={preset} presets={padPresets.map(p => ({ value: p, label: p }))} onPreset={p => setPreset(p as PadPreset)} volume={volume} onVolume={setVolume}
-    position={position} positions={positions.map(p => ({ value: p, label: `${p} shape (unreviewed)` }))} onPosition={p => setPosition(p as MajorPosition)} view={view} onView={setView}
+    position={position} positions={positions.map(p => ({ value: p, label: `${p} shape (unreviewed)` }))} onPosition={p => setPosition(p as MajorPosition)} view={view} onView={setView} neckView={neckView} onNeckView={next => { setNeckView(next); try { window.localStorage.setItem('practice-pads-neck-view', next); } catch { setError('View changed, but this browser could not save the preference.'); } }}
     configuration={<LocalMappingControls practice={practice} context={mappingContext} mapping={mapping}/>}
-    notation={<VisualError key={`${parent}-${family}-${degree}`}><ModeStaff practice={practice}/></VisualError>} fretboard={<VisualError key={`${parent}-${family}-${degree}-${position}`}><GuitarFretboard practice={practice} position={position} fingering={mapping.value}/></VisualError>} exercise={<VisualError key={`${parent}-${family}-${degree}`}><GuitarExercise practice={practice} fingering={mapping.value}/></VisualError>} /></>;
+    notation={<VisualError key={`${parent}-${family}-${degree}`}><ModeStaff practice={practice}/></VisualError>} fretboard={<VisualError key={`${parent}-${family}-${degree}-${position}`}><GuitarFretboard practice={practice} position={position} fingering={mapping.value} neckView={neckView}/></VisualError>} exercise={<VisualError key={`${parent}-${family}-${degree}`}><GuitarExercise practice={practice} fingering={mapping.value}/></VisualError>} /></>;
 }

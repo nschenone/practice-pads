@@ -3,7 +3,7 @@ import { Fretboard } from '@moonwave99/fretboard.js';
 import './editor.css';
 import { Note, Interval } from '@tonaljs/tonal';
 import type { Fingering, FingeringEvent, GuidedPractice, ScaleFamily, SpelledPitchClass } from '../contracts';
-import { deriveMode, noteName } from '../theory';
+import { deriveMode, noteName, SCALE_FAMILIES } from '../theory';
 import { validateFingeringEvent, type MajorPosition } from '../visualization';
 
 /** Identity deliberately excludes the selected derivative mode. */
@@ -14,7 +14,7 @@ const key = 'practice-pads-fingerings-v1';
 const maxBytes = 200_000, maxMappings = 100, maxEvents = 256;
 const tuning = ['E4', 'B3', 'G3', 'D3', 'A2', 'E2'];
 const positions = ['C', 'A', 'G', 'E', 'D'];
-const families = ['major', 'jazz-melodic-minor', 'harmonic-minor'];
+const families = SCALE_FAMILIES;
 function object(value: unknown, keys: string[]): asserts value is Record<string, any> {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(k => !keys.includes(k)) || keys.some(k => !Object.hasOwn(value, k))) throw new Error('Invalid data fields');
 }

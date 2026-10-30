@@ -5,6 +5,7 @@ const letters = ['C', 'D', 'E', 'F', 'G', 'A', 'B'] as const;
 const families: Record<ScaleFamily, { scale: string; names: string[]; aliases: string[][]; qualities: ChordQuality[]; characteristics: number[][] }> = {
   major: { scale: 'major', names: ['Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian', 'Aeolian', 'Locrian'], aliases: [[], [], [], [], [], [], []], qualities: ['maj7', 'm7', 'm7', 'maj7', '7', 'm7', 'm7b5'], characteristics: [[], [], [], [4], [], [], []] },
   'jazz-melodic-minor': { scale: 'melodic minor', names: ['Jazz melodic minor', 'Dorian b2', 'Lydian augmented', 'Lydian dominant', 'Mixolydian b6', 'Locrian natural 2', 'Superlocrian'], aliases: [[], [], [], [], [], [], ['Altered']], qualities: ['m(maj7)', 'm7', 'maj7#5', '7', '7', 'm7b5', 'm7b5'], characteristics: [[], [], [4, 5], [4], [6], [], []] },
+  'natural-minor': { scale: 'minor', names: ['Aeolian', 'Locrian', 'Ionian', 'Dorian', 'Phrygian', 'Lydian', 'Mixolydian'], aliases: [['Natural minor'], [], [], [], [], [], []], qualities: ['m7', 'm7b5', 'maj7', 'm7', 'm7', 'maj7', '7'], characteristics: [[], [], [], [], [], [4], []] },
   'harmonic-minor': { scale: 'harmonic minor', names: ['Harmonic minor', 'Locrian natural 6', 'Ionian augmented', 'Dorian #4', 'Phrygian dominant', 'Lydian #2', 'Ultralocrian'], aliases: [[], [], [], [], [], [], []], qualities: ['m(maj7)', 'm7b5', 'maj7#5', 'm7', '7', 'maj7', 'dim7'], characteristics: [[], [], [], [], [2, 6], [], []] },
 };
 const chordTypes: Record<ChordQuality, string> = { maj7: 'maj7', m7: 'm7', '7': '7', m7b5: 'm7b5', 'm(maj7)': 'mM7', 'maj7#5': 'maj7#5', dim7: 'dim7' };
@@ -36,7 +37,7 @@ function degreeIndex(degree: ModeDegree): number {
   return degree - 1;
 }
 export const SUPPORTED_TONICS: readonly Readonly<SpelledPitchClass>[] = Object.freeze(['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(fromTonal).map(note => Object.freeze(note)));
-export const SCALE_FAMILIES: readonly ScaleFamily[] = Object.freeze(['major', 'jazz-melodic-minor', 'harmonic-minor']);
+export const SCALE_FAMILIES: readonly ScaleFamily[] = Object.freeze(['major', 'jazz-melodic-minor', 'harmonic-minor', 'natural-minor']);
 
 export function noteName(note: SpelledPitchClass): string {
   validateNote(note);

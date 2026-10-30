@@ -27,11 +27,17 @@ export function minorPosition(parentTonic: SpelledPitchClass, family: Exclude<Sc
   }));
 }
 
-/** Full upstream parent pitch collection over frets 0–12; not a boxed fingering. */
+/** Complete upstream parent collection, for a full-neck context view. */
+export function parentScaleMap(parentTonic: SpelledPitchClass, family: ScaleFamily) {
+  const types = { major: 'major', 'natural-minor': 'minor', 'jazz-melodic-minor': 'melodic minor', 'harmonic-minor': 'harmonic minor' };
+  if (!Object.hasOwn(types, family)) throw new RangeError('Invalid scale family');
+  return new FretboardSystem({ fretCount: 24 }).getScale({ root: noteName(parentTonic), type: types[family] });
+}
+
+/** Legacy unboxed minor collection over frets 0–12. */
 export function minorScaleMap(parentTonic: SpelledPitchClass, family: Exclude<ScaleFamily, 'major'>) {
-  const type = family === 'jazz-melodic-minor' ? 'melodic minor' : family === 'harmonic-minor' ? 'harmonic minor' : null;
-  if (!type) throw new RangeError('Invalid minor family');
-  return new FretboardSystem({ fretCount: 12 }).getScale({ root: noteName(parentTonic), type });
+  if (!Object.hasOwn(C_MINOR_POSITION_FRETS, family)) throw new RangeError('Invalid minor family');
+  return parentScaleMap(parentTonic, family).filter(point => point.fret <= 12);
 }
 
 /** Guitar strings 1–6 run high E to low E. Pitch is sounding, not written octave. */

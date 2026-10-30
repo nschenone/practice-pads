@@ -11,13 +11,28 @@ const rows = [
   [['1','2','b3','4','5','b6','7'], 'm(maj7)'], [['1','b2','b3','4','b5','6','b7'], 'm7b5'], [['1','2','3','4','#5','6','7'], 'maj7#5'], [['1','2','b3','#4','5','6','b7'], 'm7'], [['1','b2','3','4','5','b6','b7'], '7'], [['1','#2','3','#4','5','6','7'], 'maj7'], [['1','b2','b3','b4','b5','b6','bb7'], 'dim7'],
 ] as const;
 describe('theory', () => {
-  it('checks all 21 formula and literal chord rows', () => {
+  it('checks all 28 formula and literal chord rows', () => {
     SCALE_FAMILIES.forEach((family, fi) => { for (let i = 0; i < 7; i++) {
       const degree = (i + 1) as ModeDegree, mode = deriveMode(c, family, degree);
-      expect(modeMetadata(family, degree).intervalLabels).toEqual(rows[fi * 7 + i][0]);
-      expect(literalChord(mode).quality).toBe(rows[fi * 7 + i][1]);
+      const row = rows[family === 'natural-minor' ? (i + 5) % 7 : fi * 7 + i];
+      expect(modeMetadata(family, degree).intervalLabels).toEqual(row[0]);
+      expect(literalChord(mode).quality).toBe(row[1]);
       expect(literalChord(mode).tones).toEqual([mode.notes[0], mode.notes[2], mode.notes[4], mode.notes[6]]);
     }});
+  });
+  it('offers natural minor as its own parent and modal family', () => {
+    const a = SUPPORTED_TONICS.find(n => noteName(n) === 'A')!;
+    const practice = guidedPractice(a, 'natural-minor', 1, 'E');
+    expect(names(practice.mode.notes)).toEqual(['A','B','C','D','E','F','G']);
+    expect(practice.mode.name).toBe('Aeolian');
+    expect(practice.chord.symbol).toBe('Am7');
+    expect(modeMetadata('natural-minor', 1).aliases).toEqual(['Natural minor']);
+    expect(Array.from({ length: 7 }, (_, i) => guidedPractice(a, 'natural-minor', (i + 1) as ModeDegree).chord.symbol)).toEqual(['Am7','Bm7b5','Cmaj7','Dm7','Em7','Fmaj7','G7']);
+    const sixth = guidedPractice(a, 'natural-minor', 6, 'E');
+    expect(sixth.mode.name).toBe('Lydian');
+    expect(names(sixth.mode.notes)).toEqual(['F','G','A','B','C','D','E']);
+    expect(sixth.parentTonic).toEqual(a);
+    expect(sixth.positionId).toBe('E');
   });
   it('derives every supported parent and family', () => {
     for (const tonic of SUPPORTED_TONICS) for (const family of SCALE_FAMILIES) for (let i = 1; i <= 7; i++) {

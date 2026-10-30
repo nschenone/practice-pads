@@ -14,7 +14,17 @@ it('renders controlled shape buttons and guided configuration only', () => {
  expect(html).toContain('aria-label="C shape (unreviewed)" aria-pressed="false"');
  expect(html.indexOf('Configuration slot')).toBeGreaterThan(html.indexOf('Guitar'));
  expect(html).not.toContain('Self-guided'); expect(html).not.toContain('Practice workspace');
- expect(html.indexOf('Guitar')).toBeLessThan(html.indexOf('Mode notation'));
+ expect(html.indexOf('Mode notation')).toBeLessThan(html.indexOf('Guitar'));
+ expect(html).toContain('pp-mode-study');
+});
+
+it('offers natural minor and controlled neck ranges', () => {
+ const props = { parent:'A', family:'natural-minor', keyPairs:[], modes:[], degree:1, positions:[], position:'E', view:'diagram', notes:[], presets:[], status:{state:'stopped'}, neckView:'full', onNeckView:()=>{} } as unknown as WorkspaceProps;
+ const html = renderToStaticMarkup(<PracticeWorkspace {...props}/>);
+ expect(html).toContain('<option value="natural-minor" selected="">Natural minor</option>');
+ expect(html).toContain('aria-label="Fretboard range"');
+ expect(html).toContain('aria-pressed="true">Full neck');
+ expect(html).toContain('E shape highlighted');
 });
 
 it('renders seven evenly addressable notes with non-color role labels', () => {
@@ -22,6 +32,7 @@ it('renders seven evenly addressable notes with non-color role labels', () => {
  const html = renderToStaticMarkup(<Relationship notes={notes}/>);
  expect((html.match(/<li /g) ?? [])).toHaveLength(7);
  expect(html).toContain('C, 1, Tonic, Chord tone');
+ expect(html).toContain('data-tonic="true"');
  expect(html).toContain('F, 4, Characteristic');
  expect(html).toContain('◎ Tonic'); expect(html).toContain('★ Characteristic');
 });

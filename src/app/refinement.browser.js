@@ -2,14 +2,14 @@
 async page => {
   const assert = (ok, message) => { if (!ok) throw new Error(message); };
   const key = 'practice-pads-fingerings-v1';
-  await page.evaluate(key => localStorage.removeItem(key), key);
+  await page.evaluate(key => { localStorage.removeItem(key); localStorage.removeItem('practice-pads-neck-view'); }, key);
   await page.reload();
   assert(await page.getByRole('button', { name: 'Self-guided', exact: true }).count() === 0, 'removed workflow');
   assert(await page.getByText('Note positions and roles', { exact: true }).count() === 0, 'removed visible positions block');
   assert(await page.locator('.pp-notes li').count() === 7, 'seven note cells');
   const coordinates = () => page.locator('.pp-guitar .dot').evaluateAll(dots => dots.map(dot => dot.getAttribute('class').match(/dot-id-s\d+:f\d+/)?.[0]).sort().join('|'));
   const collections = {};
-  for (const family of ['jazz-melodic-minor', 'harmonic-minor']) {
+  for (const family of ['natural-minor', 'jazz-melodic-minor', 'harmonic-minor']) {
     await page.getByRole('combobox', { name: 'Family', exact: true }).selectOption(family);
     const shapes = [];
     for (const shape of ['C', 'A', 'G', 'E', 'D']) {
@@ -88,5 +88,5 @@ async page => {
     assert(size[0] === size[1], `document overflow ${size}`);
     layouts.push(size);
   }
-  return { realMinorShapes: 10, modeInvariant: true, touchEditorMouseKeyboard: true, orderedTab: true, importAndDraftProtection: true, savedReload: true, mutedPlayback: true, layouts };
+  return { realMinorShapes: 15, modeInvariant: true, touchEditorMouseKeyboard: true, orderedTab: true, importAndDraftProtection: true, savedReload: true, mutedPlayback: true, layouts };
 }

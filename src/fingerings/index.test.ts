@@ -9,7 +9,7 @@ const context: FingeringContext = { parentTonic: d, family: 'jazz-melodic-minor'
 function storage() { const map = new Map<string,string>(); return { getItem: (k: string) => map.get(k) ?? null, setItem: (k: string,v: string) => { map.set(k,v); }, removeItem: (k: string) => { map.delete(k); }, clear: () => map.clear(), key: (i: number) => [...map.keys()][i] ?? null, get length() { return map.size; } }; }
 describe('minor parent mapping', () => {
   it('gets complete upstream collections and keeps coordinates across modes', () => {
-    for (const [family, scale] of [['jazz-melodic-minor', 'melodic minor'], ['harmonic-minor', 'harmonic minor']] as const) {
+    for (const [family, scale] of [['natural-minor', 'minor'], ['jazz-melodic-minor', 'melodic minor'], ['harmonic-minor', 'harmonic minor']] as const) {
       const a = guidedPractice(d, family, 1), b = guidedPractice(d, family, 3);
       const points = minorScaleMap(a.parentTonic, family);
       expect(new Set(points.map(p => p.chroma))).toEqual(new Set(Scale.get(`D ${scale}`).notes.map(n => b.mode.notes.find(p => p.letter + (p.accidental === 1 ? '#' : p.accidental === -1 ? 'b' : '') === n)!.pitchClass)));
@@ -17,6 +17,21 @@ describe('minor parent mapping', () => {
       expect(points.some(p => p.chroma === 5)).toBe(true);
       if (family === 'harmonic-minor') expect(points.some(p => p.chroma === 10)).toBe(true);
     }
+  });
+  it('stores natural minor independently without migrating existing mappings', () => {
+    const store = createFingeringStorage(storage());
+    const natural: FingeringContext = { ...context, family: 'natural-minor' };
+    const old = { id: 'old', source: 'Synthetic regression', review: 'unreviewed' as const, events: [eventAt(context, 6, 10)] };
+    const added = { ...old, id: 'natural', events: [eventAt(natural, 1, 1)] };
+    store.save(context, old);
+    store.save(natural, added);
+    const backup = store.exportJSON();
+    const restored = createFingeringStorage(storage());
+    restored.importJSON(backup);
+    expect(restored.get(context)).toEqual(old);
+    expect(restored.get(natural)).toEqual(added);
+    restored.reset(natural);
+    expect(restored.get(context)).toEqual(old);
   });
   it('retains parent spelling across enharmonic octave boundaries', () => {
     const sharpMinor: FingeringContext = { ...context, parentTonic: { letter: 'C', accidental: 1, pitchClass: 1 }, family: 'harmonic-minor' };

@@ -8,9 +8,9 @@ For D jazz melodic minor, select degree III to hear Fmaj7#5 and see F Lydian aug
 
 The major diagram uses fretboard.js's five major-derived templates. They have not been teacher-reviewed. A position describes physical locations; fingering specifies fingers, an ordered exercise specifies a sequence, and phrasing concerns how notes are played in time. One does not automatically supply the others.
 
-Natural minor is degree VI of its relative major. Its major-derived positions show the same pitch collection, not necessarily five named minor chord forms. Jazz melodic minor and harmonic minor have different notes and need their own treatment.
+Natural minor (Aeolian) is available directly in the Family selector, with its own minor parent and five minor-form positions. It shares notes with degree VI of its relative major, but is not represented by switching to that major parent. A natural minor is A B C D E F G; its V chord is Em7, not the E7 of A harmonic minor.
 
-Use the C, A, G, E and D buttons to select a position directly. Form names are not fret-order numbers. Both minor families use five transcribed reference position maps from [published CAGED charts](minor-caged-sources.md), not a full-neck scale-note fallback. The shape labels are inferred from root anchors; transcription, naming and playability need independent musician review. The diagram crops to the position and retains actual fret numbers. Reference dots do not define an exercise sequence or finger numbers.
+Use the C, A, G, E and D buttons to select a position directly. Form names are not fret-order numbers. All three minor families use five transcribed reference position maps from [published CAGED charts](minor-caged-sources.md), not a full-neck scale-note fallback. The shape labels are inferred from root anchors; transcription, naming and playability need independent musician review. **Position** crops the diagram to the selected shape and retains actual fret numbers. **Full neck** shows the parent scale over frets 0–24 with the selected position highlighted. These controls do not change the parent, mode or shape. The browser remembers the view separately from your mappings; switching to Exercise preserves it too. Reference dots do not define an exercise sequence or finger numbers.
 
 ## Correcting a local position
 

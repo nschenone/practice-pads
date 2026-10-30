@@ -2,7 +2,11 @@
 
 **Session:** 2026-10-29, from inherited session metadata, not an independently read system clock. This is bounded source research, not a complete package census; no app installs, implementation or runtime compatibility tests were performed. The existing prototype pitch map is not a validated fingering source.
 
-## Summary and verdict
+## Follow-up: actual minor positions found
+
+[Verified first-party teaching charts](minor-caged-sources.md) now identify Jens Larsen's five-position CAGED patterns for both jazz melodic minor and harmonic minor. The earlier investigation below concerned reusable software/data and did not establish that actual teaching positions were unavailable. The app's minor pitch map is still not those positions.
+
+## Original summary and verdict
 
 **No complete, clearly reusable source was verified** for five teacher-acceptable CAGED scale fingerings, including open positions, consistent ordered exercises and all three parent families. Two genuinely substantive leads deserve follow-up: fretboard.js contains five explicit major-derived CAGED point templates, while Guitar Positions generates fingered, ascending box patterns for all three interval families. Neither has demonstrated the full requirement: fretboard.js does not encode the two minor-family shapes or fingers; Guitar Positions calls its generated boxes CAGED-*like*, and its README's MIT statement conflicts with the absence of a LICENSE file and unresolved provenance.
 

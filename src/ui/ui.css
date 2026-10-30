@@ -2,3 +2,14 @@
 
 /* Repeated practice controls remain large enough for quick targeting. */
 .pp-modes button,.pp-play,.pp-switch button,.pp-shapes button{min-height:44px}.pp-shapes{display:flex;gap:4px;flex-wrap:wrap}.pp-shapes button{min-width:44px}.pp-shapes button[aria-pressed=true]{background:#dba872;color:#251b14;border-color:#f4d6ab}.pp-shell h1{font-size:24px;margin:6px 0}.pp-header{padding-bottom:6px}.pp-panel{padding:10px 14px;margin-top:8px}.pp-notes{margin-top:6px;gap:16px}.pp-note{padding:2px}.pp-study-head{justify-content:flex-start}.pp-study-head h2{margin-right:auto}@media(max-width:1100px){.pp-study{grid-template-columns:1fr}}
+/* The guitar is the primary practice surface; notation remains secondary. */
+.pp-study{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.pp-relationship h2{font-size:18px}
+.pp-notes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:10px}
+.pp-notes li{min-width:0;background:#25251f;border:1px solid #625e50;border-radius:6px;padding:8px 2px;font-size:14px}
+.pp-notes li strong{font-size:18px;overflow-wrap:anywhere}.pp-note-marks{min-height:1.45em;color:#f2c67f;letter-spacing:2px}
+.pp-legend{font-size:12px;color:#ded4c2;margin-top:8px!important}
+.pp-shell button,.pp-shell select{min-height:44px}.pp-circle button{width:44px;height:44px}
+.pp-guitar .pp-switch{margin-top:10px}
+@media(max-width:1100px){.pp-study{grid-template-columns:1fr}}
+@media(max-width:600px){.pp-notes{gap:3px}.pp-notes li{font-size:12px;padding:7px 1px}.pp-notes li strong{font-size:15px}.pp-note-marks{letter-spacing:0}}

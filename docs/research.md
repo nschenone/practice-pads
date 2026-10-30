@@ -1,6 +1,6 @@
 # Practice Pads: technical and musical research
 
-Research session: 2026-10-29 (session metadata). Laptop-first; no implementation, installation, browser testing or deployment has been performed. This brief consolidates four parallel research tracks. Recommendations below are not implemented decisions.
+Historical research notes: the findings below describe research rather than the current implementation. See the [practice guide](practice.md) and [integration notes](integration.md) for current status.
 
 ## Findings that matter
 
@@ -60,7 +60,7 @@ For this app, label melodic minor as **jazz melodic minor**: `1 2 ♭3 4 5 6 7` 
 
 ### Derived seven-mode reference
 
-The following formulas and literal chords were calculated by rotating each parent's seven degrees and stacking modal degrees 1, 3, 5 and 7. A Python arithmetic check verified all 21 rows against the parent semitone patterns. This validates interval arithmetic, not teaching suitability or library behavior. Names/aliases vary; prefer the friend's vocabulary. Sources for formulas and names: [Puget Sound](https://musictheory.pugetsound.edu/mt21c/JazzScales.html), [Berklee](https://online.berklee.edu/takenote/jazz-improvisation-10-scales/), [Tonal scale dictionary](https://github.com/tonaljs/tonal/blob/main/packages/scale-type/data.ts).
+The following formulas and literal chords were calculated by rotating each parent's seven degrees and stacking modal degrees 1, 3, 5 and 7. A Python arithmetic check verified all 21 rows against the parent semitone patterns. This validates interval arithmetic, not teaching suitability or library behavior. Names/aliases vary; prefer the musician’s vocabulary. Sources for formulas and names: [Puget Sound](https://musictheory.pugetsound.edu/mt21c/JazzScales.html), [Berklee](https://online.berklee.edu/takenote/jazz-improvisation-10-scales/), [Tonal scale dictionary](https://github.com/tonaljs/tonal/blob/main/packages/scale-type/data.ts).
 
 Chord abbreviations: `ø7` = half-diminished seventh; `°7` = diminished seventh; `m(maj7)` = minor triad with major seventh. Qualities are relative to the modal tonic.
 
@@ -115,7 +115,7 @@ CAGED connects five familiar chord-form families to overlapping scale regions. F
 
 **Recommendation:** distinguish the set of displayed scale locations from an ordered exercise. Reviewed fingering data should specify string/fret events, parent-root anchors, range, optional fingers and open-string exceptions. Do not copy instructional diagrams without checking reuse permission. Minor-family shapes need review rather than automatically relabeling major-scale boxes.
 
-Open strings cannot simply be shifted while remaining open. Transposition near the nut can require alternative fingerings or otherwise produce impossible negative frets. The original claim that the lowest D melodic-minor position is specifically the canonical “D shape” remains **unverified**. Let the friend approve the actual diagram and terminology.
+Open strings cannot simply be shifted while remaining open. Transposition near the nut can require alternative fingerings or otherwise produce impossible negative frets. The original claim that the lowest D melodic-minor position is specifically the canonical “D shape” remains **unverified**. Have a musician review the actual diagram and terminology.
 
 For derivative mode changes, retain shape identity and physical note locations. Staff notation can rotate to start on the modal tonic while the selected guitar exercise remains fixed; the UI must distinguish these two views. Whether the ordered tab exercise should also rotate is a teaching decision, not a rendering requirement.
 
@@ -137,10 +137,10 @@ One laptop workspace for D jazz melodic minor, seven degree choices, one warm pa
 - **Notation:** musician checks D-minor signature, B-natural/C-sharp, modal ordering, octave convention, barline resets and eventual tab/staff agreement. Include sharp and flat keys when generalizing.
 - **Audio:** no sound on load; gesture starts exactly one chord; several-minute sustain; clean Stop; no stuck/doubled voices after repeated clicks, rapid changes or pending startup. Measure digital peaks during voice overlap, test mute, and listen at low device volume. Digital metering is not hearing-safety certification.
 - **Recovery:** background/foreground, sleep/wake and output changes; accurate status and explicit retry if interrupted; no unexpected restart after Stop.
-- **Desktop matrix:** current Safari/Chrome on macOS and Chrome/Firefox on Windows, with actual versions recorded. Prioritize the friend's own laptop first. Test keyboard-only use, visible focus, non-color-only highlights, a 13-inch viewport and 200% zoom. [WCAG reference](https://www.w3.org/WAI/WCAG22/quickref/)
+- **Desktop matrix:** current Safari/Chrome on macOS and Chrome/Firefox on Windows, with actual versions recorded. Prioritize the target laptop first. Test keyboard-only use, visible focus, non-color-only highlights, a 13-inch viewport and 200% zoom. [WCAG reference](https://www.w3.org/WAI/WCAG22/quickref/)
 - **Deployment:** build/preview and published `/practice-pads/` asset paths; reload/direct entry; no secrets; notices retained. No persistence or routing complexity unless needed.
 
-## 7. Decisions for the friend
+## 7. Questions for a musician
 
 1. Is publicly readable source and a public website acceptable? Which laptop OS/browser should be the first test target?
 2. What should the pad sound like, in what register, and should it include a low root? A reference recording would be more useful than five preset names.

@@ -6,7 +6,7 @@ The five major templates are source-provided and unreviewed. Minor families with
 
 ## Verified locally
 
-Clean installation, typecheck, 39 tests, production build and a zero-vulnerability npm audit passed. The production preview was exercised in Chromium under `/practice-pads/`, not only through development fixtures.
+Clean installation, typecheck, 40 tests, production build and a zero-vulnerability npm audit passed. A size-boundary regression verifies that every saved collection in the test can export a compact backup and reimport it within the same size limit. The production preview was exercised in Chromium under `/practice-pads/`, not only through development fixtures.
 
 Browser checks covered complete melodic/harmonic minor maps (including F and B-flat in D harmonic minor), adding and saving a synthetic two-event mapping, exact exercise staff/tab order, derivative-mode retention, shape isolation, reload persistence, invalid-import preservation, confirmed reset and successful reimport. The synthetic mapping is a rendering test, not an approved exercise. All five upstream major shape buttons rendered. Muted Play/Stop reached the real engine's statuses, and all five preset controls were exercised; this was not a listening or peak measurement.
 

@@ -24,6 +24,24 @@ describe('minor parent mapping', () => {
     const doubleSharp: FingeringContext = { ...context, parentTonic: { letter: 'G', accidental: 1, pitchClass: 8 }, family: 'harmonic-minor' };
     expect(eventAt(doubleSharp, 1, 3).pitch).toEqual({ letter: 'F', accidental: 2, pitchClass: 7, octave: 4, midi: 67 });
   });
+  it('can reimport its own backup near the collection size limit', () => {
+    const raw = storage(), original = createFingeringStorage(raw);
+    const contexts: FingeringContext[] = [
+      ...(['C', 'A', 'G', 'E', 'D'] as const).map(position => ({ ...context, position })),
+      { ...context, family: 'harmonic-minor' },
+    ];
+    for (const ctx of contexts) original.save(ctx, {
+      id: contextKey(ctx), source: 'synthetic size-boundary regression', review: 'unreviewed',
+      events: Array(256).fill(eventAt(ctx, 1, 0)),
+    });
+    const compact = raw.getItem('practice-pads-fingerings-v1')!;
+    expect(compact.length).toBeLessThan(200_000);
+    expect(JSON.stringify(JSON.parse(compact), null, 2).length).toBeGreaterThan(200_000);
+    const backup = original.exportJSON(), restored = createFingeringStorage(storage());
+    restored.importJSON(backup);
+    expect(restored.exportJSON()).toBe(backup);
+    expect(parseMappings(backup).mappings).toHaveLength(6);
+  });
   it('reports unavailable, quota and corrupt storage without overwriting saved data', () => {
     const raw = storage(), good = createFingeringStorage(raw);
     const f = { id: 'local', source: 'synthetic', review: 'unreviewed' as const, events: [eventAt(context, 1, 0)] };
@@ -46,6 +64,8 @@ describe('minor parent mapping', () => {
     expect(contextKey(context)).not.toEqual(contextKey({ ...context, family: 'harmonic-minor' }));
     expect(() => s.importJSON('{"version":1,"mappings":[{"__proto__":{}}]}')).toThrow();
     expect(s.exportJSON()).toBe(json); s.reset(context); expect(s.get(context)).toBeUndefined(); s.importJSON(json); expect(s.get(context)).toEqual(f);
-    expect(() => parseMappings(json.replace('"fret": 2', '"fret": 2.5'))).toThrow();
+    const invalid = JSON.parse(json);
+    invalid.mappings[0].fingering.events[0].fret = 2.5;
+    expect(() => parseMappings(JSON.stringify(invalid))).toThrow();
   });
 });

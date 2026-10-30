@@ -1,13 +1,29 @@
 # Practice Pads
 
-A browser-based workspace for practicing modes with sustained chord pads. Guided practice keeps the parent scale and position while changing modes. Self-guided practice lists pitch-compatible modes for an input chord; containment is not a harmonic recommendation.
+Practice modes over a sustained chord in your browser. Choose a parent scale, hear its chords, and explore how each mode relates to the same notes and guitar position. Practice Pads supports major, jazz melodic minor and harmonic minor, with seven modes per family.
 
-## Local development
+In **Guided** practice, changing the mode changes the tonal center and chord while retaining the parent collection and selected position. In **Self-guided**, choose a chord to see pitch-compatible modes; the list is not a harmonic recommendation. For example, D jazz melodic minor gives F Lydian augmented on degree III: B is its #4 and C# its #5, also a chord tone in Fmaj7#5.
 
-Use Node 24 and npm 11. Run `npm ci`, then `npm run dev` and open the printed `/practice-pads/` URL. `npm run check` runs typecheck, tests and the production build. To inspect the actual build, run `npm run build && npx vite preview --host 127.0.0.1` and open `http://127.0.0.1:4173/practice-pads/`.
+Play starts audio only after a user gesture. Start at low device and app volume. Tone.js synthesizes five sounds: Warm, Airy, Glass, Dark and Organ. Browsers and devices differ in autoplay and interruption behavior; sound quality, peak levels and recovery still need review. VexFlow renders notation and tab; fretboard.js renders the guitar diagram. Major positions use its unreviewed templates. Minor fingering and exercise support is being implemented and requires final verification; a pitch map is not a reviewed CAGED fingering.
 
-Major guitar templates come from fretboard.js and are not teacher-reviewed. Minor fingerings and ordered exercises are pending. Start with low device volume; audio quality, peak levels and interruption recovery still need listening and measurement. See [integration notes](docs/integration.md) and [visualization sources](docs/visualization.md). The unresolved fretboard.js notice is a before-redistribution gate. Publication and hosting require separate approval.
+The planned public site is <https://nschenone.github.io/practice-pads/>; availability has not yet been verified. This prototype has no accounts, backend, analytics, router or cloud sync.
 
-- [Prototype plan](docs/prototype-plan.md)
-- [Shared contracts](docs/contracts.md)
-- [Technical and musical research](docs/research.md)
+## Run locally
+
+Use Node 24 and npm:
+
+```sh
+npm ci
+npm run dev
+```
+
+Open the URL printed by Vite. To run type checks, tests and a production build, use `npm run check`. To preview the production build under its configured base path:
+
+```sh
+npm run build
+npx vite preview --host 127.0.0.1
+```
+
+Open <http://127.0.0.1:4173/practice-pads/>.
+
+[Practice guide](docs/practice.md) · [Theory API](docs/theory.md) · [Visualization API and notices](docs/visualization.md) · [Research](docs/research.md) · [Release checks](docs/integration.md)

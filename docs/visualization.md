@@ -10,8 +10,18 @@ For dev-only inspection run `npm run dev` and open `/practice-pads/src/visualiza
 
 ## Sources and notices
 
-- @moonwave99/fretboard.js 0.2.13, https://github.com/moonwave99/fretboard.js, author Diego Caponera. The npm package manifest declares ISC; its tarball supplies no standalone license text or copyright notice. No shape arrays are copied locally. The exact upstream notice and independent educational-data provenance remain unresolved and must be confirmed before redistribution. The source has five major-derived shapes; no reviewed jazz/harmonic minor shapes, finger numbers, or ordered exercises were found.
+- @moonwave99/fretboard.js 0.2.13, https://github.com/moonwave99/fretboard.js, author Diego Caponera. The npm package manifest declares ISC. Correction: the installed package README contains the full ISC notice and copyright; the earlier assertion that its tarball lacked a copyright notice was wrong. The notice is reproduced below. No shape arrays are copied locally. Independent educational-data provenance remains unreviewed. The source has five major-derived shapes; no reviewed jazz/harmonic minor shapes, finger numbers, or ordered exercises were found.
 - VexFlow 5.0.0, https://github.com/vexflow/vexflow, MIT; notice reproduced below from the installed package. Tonal is the existing theory dependency.
+
+### fretboard.js ISC notice
+
+Copyright (c) 2020, Diego Caponera <hello@diegocaponera.com>
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+### VexFlow MIT notice
 
 VexFlow - A JavaScript library for rendering music notation.
 

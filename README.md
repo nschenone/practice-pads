@@ -6,7 +6,7 @@ In **Guided** practice, changing the mode changes the tonal center and chord whi
 
 Play starts audio only after a user gesture. Start at low device and app volume. Tone.js synthesizes five sounds: Warm, Airy, Glass, Dark and Organ. Browsers and devices differ in autoplay and interruption behavior; sound quality, peak levels and recovery still need review. VexFlow renders notation and tab; fretboard.js renders the guitar diagram. Major positions use its unreviewed templates. Minor families show a scale-note map until you supply a local position mapping. You can edit, save and import/export mappings in this browser; local review is not teacher approval. A pitch map is not a reviewed CAGED fingering.
 
-The planned public site is <https://nschenone.github.io/practice-pads/>; availability has not yet been verified. This prototype has no accounts, backend, analytics, router or cloud sync.
+[Open Practice Pads](https://nschenone.github.io/practice-pads/). This prototype has no accounts, backend, analytics, router or cloud sync.
 
 ## Run locally
 

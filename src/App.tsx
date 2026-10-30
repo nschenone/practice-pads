@@ -1,6 +1,7 @@
 import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Note } from '@tonaljs/tonal';
 import { keyPairs as pairs, relativeParent } from './app/keyPolicy';
+import { LocalMappingControls, useLocalMapping } from './app/LocalMappings';
 import { PadAudioEngine, padPresets, type PadPreset } from './audio';
 import type { ChordQuality, ModeDegree, PlaybackStatus, ScaleFamily, SpelledPitchClass } from './contracts';
 import { compatibleCandidates, constructChord, guidedPractice, modeMetadata, noteName, playbackVoicing, SUPPORTED_TONICS } from './theory';
@@ -39,6 +40,8 @@ export default function App() {
       return { practice, chord, modes, metadata, voicing: playbackVoicing(chord), candidates: workflow === 'self-guided' ? compatibleCandidates(pitch(root), quality) : [], error: '' };
     } catch (e) { return { error: e instanceof Error ? e.message : 'Unable to derive practice' }; }
   }, [parent, family, degree, position, workflow, root, quality]);
+  const mappingContext = useMemo(() => ({ parentTonic: pitch(parent), family, position }), [parent, family, position]);
+  const mapping = useLocalMapping(mappingContext);
   useEffect(() => { const player = new PadAudioEngine(); engine.current = player; const unsubscribe = player.subscribe(setStatus); return () => { unsubscribe(); engine.current = null; player.dispose(); }; }, []);
   useEffect(() => { try { if (data.voicing) engine.current?.setVoicing(data.voicing); engine.current?.setPreset(preset); engine.current?.setVolume(volume); setError(''); } catch (e) { setError(e instanceof Error ? e.message : 'Audio configuration failed'); } }, [data, preset, volume]);
   if (!data.practice || !data.chord || !data.modes || !data.metadata) return <main role="alert">Unable to derive practice: {data.error}</main>;
@@ -55,5 +58,6 @@ export default function App() {
     candidates={(data.candidates ?? []).map(c => ({ id: `${noteName(c.parentTonic)}-${c.mode.family}-${c.mode.degree}`, mode: `${noteName(c.mode.tonic)} ${c.mode.name}`, parent: `${noteName(c.parentTonic)} ${c.mode.family}` }))}
     status={status} onPlay={() => { if (engine.current) void engine.current.play().catch(e => setError(String(e))); }} onStop={() => engine.current?.stop()} preset={preset} presets={padPresets.map(p => ({ value: p, label: p }))} onPreset={p => setPreset(p as PadPreset)} volume={volume} onVolume={setVolume}
     position={position} positions={positions.map(p => ({ value: p, label: `${p} shape (unreviewed)` }))} onPosition={p => setPosition(p as MajorPosition)} view={view} onView={setView}
-    notation={<VisualError key={`${parent}-${family}-${degree}`}><ModeStaff practice={practice}/></VisualError>} fretboard={<VisualError key={`${parent}-${family}-${degree}-${position}`}><GuitarFretboard practice={practice} position={position}/></VisualError>} exercise={<VisualError key={`${parent}-${family}-${degree}`}><GuitarExercise practice={practice}/></VisualError>} /></>;
+    configuration={<LocalMappingControls practice={practice} context={mappingContext} mapping={mapping}/>}
+    notation={<VisualError key={`${parent}-${family}-${degree}`}><ModeStaff practice={practice}/></VisualError>} fretboard={<VisualError key={`${parent}-${family}-${degree}-${position}`}><GuitarFretboard practice={practice} position={position} fingering={mapping.value}/></VisualError>} exercise={<VisualError key={`${parent}-${family}-${degree}`}><GuitarExercise practice={practice} fingering={mapping.value}/></VisualError>} /></>;
 }

@@ -18,6 +18,25 @@ describe('minor parent mapping', () => {
       if (family === 'harmonic-minor') expect(points.some(p => p.chroma === 10)).toBe(true);
     }
   });
+  it('retains parent spelling across enharmonic octave boundaries', () => {
+    const sharpMinor: FingeringContext = { ...context, parentTonic: { letter: 'C', accidental: 1, pitchClass: 1 }, family: 'harmonic-minor' };
+    expect(eventAt(sharpMinor, 2, 1).pitch).toEqual({ letter: 'B', accidental: 1, pitchClass: 0, octave: 3, midi: 60 });
+    const doubleSharp: FingeringContext = { ...context, parentTonic: { letter: 'G', accidental: 1, pitchClass: 8 }, family: 'harmonic-minor' };
+    expect(eventAt(doubleSharp, 1, 3).pitch).toEqual({ letter: 'F', accidental: 2, pitchClass: 7, octave: 4, midi: 67 });
+  });
+  it('reports unavailable, quota and corrupt storage without overwriting saved data', () => {
+    const raw = storage(), good = createFingeringStorage(raw);
+    const f = { id: 'local', source: 'synthetic', review: 'unreviewed' as const, events: [eventAt(context, 1, 0)] };
+    good.save(context, f); const backup = good.exportJSON();
+    const unavailable = createFingeringStorage({ ...raw, getItem() { throw new Error('Storage unavailable'); } });
+    expect(() => unavailable.get(context)).toThrow('Storage unavailable');
+    const full = createFingeringStorage({ ...raw, setItem() { throw new Error('Quota exceeded'); } });
+    expect(() => full.importJSON(backup)).toThrow('Quota exceeded');
+    expect(good.exportJSON()).toBe(backup);
+    raw.setItem('practice-pads-fingerings-v1', '{');
+    expect(() => good.save(context, f)).toThrow();
+    expect(raw.getItem('practice-pads-fingerings-v1')).toBe('{');
+  });
   it('round trips order, isolates context, and refuses invalid imports without data loss', () => {
     const s = createFingeringStorage(storage());
     const f = { id: 'local', source: 'synthetic', review: 'unreviewed' as const, events: [eventAt(context, 2, 2), eventAt(context, 2, 0), eventAt(context, 2, 2)] };

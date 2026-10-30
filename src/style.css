@@ -3,3 +3,15 @@ body { margin: 0; }
 .pp-study > section { min-width: 0; }
 .pp-study section section > div[aria-hidden="true"] { background: var(--pp-music-surface); color: var(--pp-music-ink); max-width: 100%; }
 .pp-visual svg { max-width: 100%; height: auto; }
+.pp-mapping { overflow-wrap: anywhere; }
+.pp-mapping p, .pp-mapping details { margin-top: 10px; }
+.pp-mapping summary, .pp-visual summary { cursor: pointer; padding: 8px 0; }
+.pp-mapping-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.pp-mapping label { flex-wrap: wrap; max-width: 100%; }
+.pp-mapping input, .pp-mapping textarea { max-width: 100%; box-sizing: border-box; font: inherit; }
+.pp-mapping textarea { display: block; width: 100%; min-width: 0; }
+.pp-mapping details > label { display: flex; margin: 8px 0; }
+.pp-mapping input[type=number] { width: 5rem; }
+.pp-mapping li { margin-top: 8px; }
+.pp-mapping li button { margin-left: 6px; }
+.pp-mapping button:disabled { cursor: default; opacity: 0.55; }

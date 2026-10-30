@@ -12,6 +12,16 @@ The major diagram uses fretboard.js's five major-derived templates. They have no
 
 Natural minor is degree VI of its relative major. Its major-derived positions show the same pitch collection, not necessarily five named minor chord forms. Jazz melodic minor and harmonic minor have different notes and need their own treatment.
 
-The next implementation intends direct C, A, G, E and D position buttons, a compact practice area and warm-paper notation surfaces. For minor families, the intended fallback is a library scale note map, explicitly not CAGED. A small local editor is planned per parent, family and position, with unreviewed defaults, Tonal validation, browser local storage, import/export and reset. These changes are pending integration and final verification; do not assume they are available or tested in this version. Local storage is browser-specific, not cloud sync or a backup.
+Use the C, A, G, E and D buttons to select a position directly. Form names are not fret-order numbers. Minor families show a complete library scale-note map when that position has no usable saved mapping; the map is not a CAGED fingering.
+
+## Correcting a local position
+
+Below the study panels, open **Edit local mapping**. Choose a string (1 is high E, 6 is low E) and fret (0 is open), then add events in the order you want to practice. Tonal validates each coordinate against the parent collection. Remove or move events to correct the sequence. The same events drive the diagram and exercise staff/tab; repeated notes are allowed. No finger numbers, rhythms or phrasing are inferred.
+
+Each mapping belongs to a parent tonic, scale family and position. Switching derivative mode keeps it; switching parent, family or position selects a different mapping. Drafts remain available while switching positions in this session. Choose **Save this position** to keep a draft after a reload. Editing clears its review flag. **Mark locally reviewed** means you checked it, not that a teacher approved it.
+
+**Discard draft / reload saved** restores the saved version. **Reset this position** asks for confirmation before removing that context's saved mapping and draft; it does not remove other positions. In **Import / export saved mappings**, export the JSON and copy it somewhere safe. Imports validate all entries before writing and replace only matching saved contexts. Save or discard matching unsaved drafts before importing. Invalid data or storage failures are shown without intentionally overwriting saved mappings.
+
+Mappings stay in this browser's local storage; they are not uploaded, synced or backed up. A different browser, device or site origin has separate data. Clearing site data removes them. Export a backup before moving from a local preview to the public site.
 
 Musician review of positions, notation and exercises remains necessary. See the [visualization reference](visualization.md) and [CAGED research](caged-research.md).

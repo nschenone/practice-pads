@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import './visualization.css';
 import { Fretboard } from '@moonwave99/fretboard.js';
 import { Note } from '@tonaljs/tonal';
 import { Accidental, Formatter, Renderer, Stave, StaveNote, TabNote, TabStave, KeySignature, Voice } from 'vexflow';
@@ -79,7 +80,7 @@ function Notation({ practice, fingering }: { practice: GuidedPractice; fingering
     observer.observe(el);
     return () => { observer.disconnect(); el.replaceChildren(); };
   }, [keyList, signature.key, fingering, tabPositions]);
-  return <section><p>{fingering ? 'Guitar exercise: written one octave above sounding' : 'Mode scale: concert pitch'}; {signature.fallback ? `no key signature; explicit accidentals (unsupported parent key ${noteName(practice.parentTonic)})` : `parent key signature ${signature.key}`}.</p><div ref={host} style={{ overflowX: 'auto' }} aria-hidden="true"/><p>{keys.join(' · ')}</p>{fingering && <p>Tab, in provided order: {fingering.events.map(e => `string ${e.string} fret ${e.fret}`).join(' · ')}</p>}</section>;
+  return <section><div ref={host} style={{ overflowX: 'auto' }} aria-hidden="true"/><p className="pp-visually-hidden">{fingering ? 'Guitar exercise, written one octave above sounding' : 'Mode scale at concert pitch'}; {signature.fallback ? `no key signature; explicit accidentals for unsupported parent key ${noteName(practice.parentTonic)}` : `parent key signature ${signature.key}`}. Notes in order: {keys.join(' · ')}.{fingering && ` Tab in order: ${fingering.events.map(e => `string ${e.string} fret ${e.fret}`).join(' · ')}.`}</p>{signature.fallback && <details><summary>Notation info</summary><p>Unsupported parent key {noteName(practice.parentTonic)}: explicit accidentals are used without a key signature.</p></details>}</section>;
 }
 export function ModeStaff({ practice }: { practice: GuidedPractice }) { return <Notation practice={practice}/>; }
 export function GuitarExercise({ practice, fingering }: { practice: GuidedPractice; fingering?: Fingering }) {
@@ -88,7 +89,7 @@ export function GuitarExercise({ practice, fingering }: { practice: GuidedPracti
   for (const event of fingering.events) {
     if (!practice.mode.notes.some(note => note.pitchClass === event.pitch.pitchClass)) throw new RangeError('Fingering pitch is outside parent scale');
   }
-  return <section><p>Source: {fingering.source}; review: {fingering.review}.</p><Notation practice={practice} fingering={fingering}/></section>;
+  return <section><Notation practice={practice} fingering={fingering}/><details><summary>Exercise info</summary><p>Written one octave above sounding. Source: {fingering.source}; review: {fingering.review}.</p></details></section>;
 }
 
 /** Major positions are upstream, unreviewed; minor positions require supplied events. */
@@ -107,13 +108,23 @@ export function GuitarFretboard({ practice, position, fingering }: { practice: G
   const labelKey = JSON.stringify(labels);
   useEffect(() => {
     const el = host.current!;
-    if (labels.length) {
+    let board: Fretboard | undefined;
+    let width = -1;
+    const render = () => {
+      const nextWidth = Math.max(720, el.clientWidth);
+      if (width === nextWidth) return;
+      width = nextWidth;
+      board?.removeEventListeners();
+      el.replaceChildren();
+      if (!labels.length) return;
       const fretCount = Math.max(12, ...labels.map(p => p.fret));
-      const board = new Fretboard({ el, fretCount, showFretNumbers: true, dotFill: 'var(--pp-music-surface, #f3ead8)', dotStrokeColor: 'var(--pp-music-ink, #302c23)', dotText: (p: { short: string }) => p.short, width: 800 });
+      board = new Fretboard({ el, fretCount, showFretNumbers: true, dotFill: 'var(--pp-music-surface, #f3ead8)', dotStrokeColor: 'var(--pp-music-ink, #302c23)', dotText: (p: { short: string }) => p.short, width, height: 240, dotSize: 26, dotTextSize: 14 });
       board.setDots(labels).render();
-      return () => { board.removeEventListeners(); el.replaceChildren(); };
-    }
-    return () => { el.replaceChildren(); };
+    };
+    render();
+    const observer = new ResizeObserver(render);
+    observer.observe(el);
+    return () => { observer.disconnect(); board?.removeEventListeners(); el.replaceChildren(); };
   }, [labelKey]);
-  return <section><p>{usable ? `Source: ${fingering.source}; review: ${fingering.review}` : practice.family === 'major' ? `fretboard.js ${position} major template; source-provided, not teacher-reviewed` : `Scale-note map, not a CAGED fingering; frets 0–12; ${position} mapping pending${fingering?.review === 'rejected' ? ' (supplied mapping rejected)' : ''}.`}</p><p>String 1 high E; fret 0 open. * marks modal tonic.</p><div ref={host} aria-hidden="true"/><details><summary>Note positions and roles</summary><p>{labels.map(p => `string ${p.string}, fret ${p.fret}: ${p.label}`).join('; ')}</p></details></section>;
+  return <section><div className="pp-fretboard-scroll" ref={host} aria-hidden="true"/><p className="pp-visually-hidden">String 1 is high E; fret 0 is open. Asterisk marks modal tonic. {labels.map(p => `string ${p.string}, fret ${p.fret}: ${p.label}`).join('; ')}.</p><details><summary>Diagram info</summary><p>{usable ? `Source: ${fingering.source}; review: ${fingering.review}.` : practice.family === 'major' ? `fretboard.js ${position} major template; source-provided, not teacher-reviewed.` : `Scale-note map, not a CAGED fingering; frets 0–12; ${position} mapping pending${fingering?.review === 'rejected' ? ' (supplied mapping rejected)' : ''}.`} String 1 is high E; fret 0 is open. * marks modal tonic.</p></details></section>;
 }

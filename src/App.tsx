@@ -8,8 +8,11 @@ import { guidedPractice, modeMetadata, noteName, playbackVoicing } from './theor
 import { PracticeWorkspace } from './ui';
 import { GuitarExercise, GuitarFretboard, ModeStaff, type MajorPosition } from './visualization';
 
-class VisualError extends Component<{ children: ReactNode }, { message: string }> {
+class VisualError extends Component<{ children: ReactNode; resetKey?: string }, { message: string }> {
   state = { message: '' };
+  componentDidUpdate(previous: { children: ReactNode; resetKey?: string }) {
+    if (previous.resetKey !== this.props.resetKey && this.state.message) this.setState({ message: '' });
+  }
   static getDerivedStateFromError(error: unknown) { return { message: error instanceof Error ? error.message : 'Visualization failed' }; }
   render() { return this.state.message ? <p role="alert">Visualization unavailable: {this.state.message}</p> : this.props.children; }
 }
@@ -58,5 +61,5 @@ export default function App() {
     status={status} onPlay={() => { if (engine.current) void engine.current.play().catch(e => setError(String(e))); }} onStop={() => engine.current?.stop()} preset={preset} presets={padPresets.map(p => ({ value: p, label: p }))} onPreset={p => setPreset(p as PadPreset)} volume={volume} onVolume={setVolume}
     position={position} positions={positions.map(p => ({ value: p, label: `${p} shape (unreviewed)` }))} onPosition={p => setPosition(p as MajorPosition)} view={view} onView={setView} neckView={neckView} onNeckView={next => { setNeckView(next); try { window.localStorage.setItem('practice-pads-neck-view', next); } catch { setError('View changed, but this browser could not save the preference.'); } }}
     configuration={<LocalMappingControls practice={practice} context={mappingContext} mapping={mapping}/>}
-    notation={<VisualError key={`${parent}-${family}-${degree}`}><ModeStaff practice={practice}/></VisualError>} fretboard={<VisualError key={`${parent}-${family}-${degree}-${position}`}><GuitarFretboard practice={practice} position={position} fingering={mapping.value} neckView={neckView}/></VisualError>} exercise={<VisualError key={`${parent}-${family}-${degree}`}><GuitarExercise practice={practice} fingering={mapping.value}/></VisualError>} /></>;
+    notation={<VisualError key={`${parent}-${family}-${degree}`}><ModeStaff practice={practice}/></VisualError>} fretboard={<VisualError key={`${parent}-${family}`} resetKey={`${degree}-${position}`}><GuitarFretboard practice={practice} position={position} fingering={mapping.value} neckView={neckView} overviewLastFret={mapping.overviewLastFret}/></VisualError>} exercise={<VisualError key={`${parent}-${family}-${degree}`}><GuitarExercise practice={practice} fingering={mapping.value}/></VisualError>} /></>;
 }

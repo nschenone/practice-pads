@@ -5,7 +5,7 @@ import { Note } from '@tonaljs/tonal';
 import { Accidental, Formatter, Renderer, Stave, StaveNote, TabNote, TabStave, KeySignature, Voice } from 'vexflow';
 import type { Fingering, GuidedPractice } from '../contracts';
 import { modeMetadata, noteName } from '../theory';
-import { majorPosition, minorPosition, parentScaleMap, validateFingeringEvent, type MajorPosition } from './index';
+import { majorPosition, minorPosition, parentScaleMap, cagedOverviewLastFret, validateFingeringEvent, type MajorPosition } from './index';
 
 export function notationKeySignature(practice: GuidedPractice) {
   const key = noteName(practice.parentTonic) + (practice.family === 'major' ? '' : 'm');
@@ -93,13 +93,15 @@ export function GuitarExercise({ practice, fingering }: { practice: GuidedPracti
 }
 
 /** Reference positions are physical maps; only supplied events define an exercise. */
-export function GuitarFretboard({ practice, position, fingering, neckView = 'position' }: { practice: GuidedPractice; position: MajorPosition; fingering?: Fingering; neckView?: 'position' | 'full' }) {
+export function GuitarFretboard({ practice, position, fingering, neckView = 'position', overviewLastFret = 0 }: { practice: GuidedPractice; position: MajorPosition; fingering?: Fingering; neckView?: 'position' | 'full'; overviewLastFret?: number }) {
   const host = useRef<HTMLDivElement>(null);
+  const scroll = useRef(0);
   const usable = fingering && fingering.review !== 'rejected' && fingering.events.length > 0;
   const positionPoints = usable ? fingering.events.map(event => { validateFingeringEvent(event); return { string: event.string, fret: event.fret, chroma: event.pitch.pitchClass }; }) : practice.family === 'major' ? majorPosition(practice.parentTonic, position) : minorPosition(practice.parentTonic, practice.family, position);
   if (positionPoints.some(point => !practice.mode.notes.some(note => note.pitchClass === point.chroma))) throw new RangeError('Fingering pitch is outside parent scale');
   const selected = new Set(positionPoints.map(point => `${point.string}:${point.fret}`));
-  const lastFret = Math.max(0, ...positionPoints.map(point => point.fret));
+  if (!Number.isInteger(overviewLastFret) || overviewLastFret < 0 || overviewLastFret > 24) throw new RangeError('Invalid overview fret');
+  const lastFret = Math.max(cagedOverviewLastFret(practice.parentTonic, practice.family), overviewLastFret, ...positionPoints.map(point => point.fret));
   const points = (neckView === 'full' ? parentScaleMap(practice.parentTonic, practice.family).filter(point => point.fret <= lastFret) : positionPoints).map(point => ({ ...point, inPosition: selected.has(`${point.string}:${point.fret}`) }));
   const metadata = modeMetadata(practice.family, practice.mode.degree);
   const labels = points.map(p => {
@@ -122,6 +124,7 @@ export function GuitarFretboard({ practice, position, fingering, neckView = 'pos
       const nextWidth = Math.max(minimumWidth - 40, el.clientWidth);
       if (width === nextWidth) return;
       width = nextWidth;
+      const left = board ? el.scrollLeft : scroll.current;
       board?.removeEventListeners();
       el.replaceChildren();
       if (!labels.length) return;
@@ -130,11 +133,12 @@ export function GuitarFretboard({ practice, position, fingering, neckView = 'pos
       if (neckView === 'full') board.style({ filter: { inPosition: true }, fill: '#e7c18e', 'stroke-width': 3, 'data-position': 'true' });
       board.style({ filter: { tonic: true }, fill: '#8dc6c0', 'data-tonic': 'true' });
       el.querySelector('svg')!.style.minWidth = `${minimumWidth}px`;
+      el.scrollLeft = neckView === 'full' ? left : 0;
     };
     render();
     const observer = new ResizeObserver(render);
     observer.observe(el);
-    return () => { observer.disconnect(); board?.removeEventListeners(); el.replaceChildren(); };
+    return () => { scroll.current = el.scrollLeft; observer.disconnect(); board?.removeEventListeners(); el.replaceChildren(); };
   }, [labelKey, neckView, lastFret]);
   return <section><div className="pp-fretboard-scroll" ref={host} aria-hidden="true"/><p className="pp-visually-hidden">{neckView === 'full' ? 'Full neck; highlighted notes belong to the selected position. ' : ''}String 1 is high E; fret 0 is open. Teal marks the modal tonic. {labels.map(p => `string ${p.string}, fret ${p.fret}: ${p.label}`).join('; ')}.</p></section>;
 }

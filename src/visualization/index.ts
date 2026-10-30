@@ -27,6 +27,14 @@ export function minorPosition(parentTonic: SpelledPitchClass, family: Exclude<Sc
   }));
 }
 
+/** Stable overview bound across every reference shape, independent of the active one. */
+export function cagedOverviewLastFret(parentTonic: SpelledPitchClass, family: ScaleFamily): number {
+  return Math.max(0, ...(['C','A','G','E','D'] as const).flatMap(position => {
+    const points = family === 'major' ? majorPosition(parentTonic, position) : minorPosition(parentTonic, family, position);
+    return points.map(point => point.fret);
+  }));
+}
+
 /** Complete upstream parent collection, for a full-neck context view. */
 export function parentScaleMap(parentTonic: SpelledPitchClass, family: ScaleFamily) {
   const types = { major: 'major', 'natural-minor': 'minor', 'jazz-melodic-minor': 'melodic minor', 'harmonic-minor': 'harmonic minor' };

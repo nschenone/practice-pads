@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { minorPosition, parentScaleMap, minorScaleMap } from './index';
+import { minorPosition, majorPosition, parentScaleMap, minorScaleMap, cagedOverviewLastFret } from './index';
 import { deriveMode, guidedPractice, SCALE_FAMILIES, SUPPORTED_TONICS } from '../theory';
 
 const families = ['natural-minor', 'jazz-melodic-minor', 'harmonic-minor'] as const;
@@ -11,6 +11,19 @@ const roots: Record<typeof positions[number], string[]> = {
 };
 
 describe('source-derived minor positions', () => {
+  it('keeps the full-neck endpoint across all five reference shapes', () => {
+    for (const family of SCALE_FAMILIES) for (const tonic of SUPPORTED_TONICS) {
+      const expected = Math.max(...positions.flatMap(shape => {
+        const points = family === 'major' ? majorPosition(tonic, shape) : minorPosition(tonic, family, shape);
+        return points.map(point => point.fret);
+      }));
+      expect(cagedOverviewLastFret(tonic, family)).toBe(expected);
+      expect(expected).toBeLessThanOrEqual(24);
+    }
+    const d = SUPPORTED_TONICS.find(note => note.letter === 'D' && note.accidental === 0)!;
+    expect(cagedOverviewLastFret(d, 'jazz-melodic-minor')).toBe(15);
+    expect(cagedOverviewLastFret(c, 'natural-minor')).toBe(16);
+  });
   it('provides full-neck parent context through fret 24 for every family', () => {
     for (const family of SCALE_FAMILIES) for (const tonic of SUPPORTED_TONICS) {
       const points = parentScaleMap(tonic, family);

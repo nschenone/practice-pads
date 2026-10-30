@@ -14,7 +14,12 @@ export function useLocalMapping(context: FingeringContext | undefined) {
   useEffect(() => {
     setMessage(''); setError('');
     if (!context || Object.hasOwn(drafts, id)) return;
-    try { put(store().get(context)); }
+    try {
+      const loaded: Record<string, Draft> = {};
+      for (const entry of store().entries()) loaded[contextKey(entry.context)] = { value: entry.fingering, dirty: false };
+      loaded[id] ??= { value: undefined, dirty: false };
+      setDrafts(all => ({ ...loaded, ...all }));
+    }
     catch (e) { setError(`Saved mappings could not be loaded: ${String(e)}. You can still edit a draft.`); put(undefined); }
   }, [id]);
   const action = (operation: () => void) => {
@@ -22,8 +27,12 @@ export function useLocalMapping(context: FingeringContext | undefined) {
     try { operation(); } catch (e) { setError(String(e)); }
   };
   const value = drafts[id]?.value;
+  const overviewLastFret = Math.max(0, ...(['C','A','G','E','D'] as const).flatMap(position => {
+    const mapping = context ? drafts[contextKey({ ...context, position })]?.value : undefined;
+    return mapping && mapping.review !== 'rejected' ? mapping.events.map(event => event.fret) : [];
+  }));
   return {
-    value, dirty: drafts[id]?.dirty ?? false, message, error, json, setJSON,
+    overviewLastFret, value, dirty: drafts[id]?.dirty ?? false, message, error, json, setJSON,
     change: (next: Fingering) => put(next, true),
     save: () => action(() => { if (!context || !value) throw new Error('Add a mapping first'); store().save(context, value); put(value); setMessage('Saved in this browser.'); }),
     reload: () => action(() => { if (!context) return; put(store().get(context)); setMessage('Loaded the saved mapping; draft discarded.'); }),

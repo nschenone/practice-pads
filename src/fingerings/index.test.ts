@@ -25,6 +25,7 @@ describe('minor parent mapping', () => {
     const added = { ...old, id: 'natural', events: [eventAt(natural, 1, 1)] };
     store.save(context, old);
     store.save(natural, added);
+    expect(store.entries()).toHaveLength(2);
     const backup = store.exportJSON();
     const restored = createFingeringStorage(storage());
     restored.importJSON(backup);

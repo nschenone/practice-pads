@@ -65,6 +65,7 @@ export function createFingeringStorage(storage: Storage) {
   const read = () => { const raw = storage.getItem(key); return raw === null ? { version: 1 as const, mappings: [] } : parseMappings(raw); };
   const write = (store: Store) => { const json = JSON.stringify(store); parseMappings(json); storage.setItem(key, json); };
   return {
+    entries() { return read().mappings; },
     get(context: FingeringContext) { return read().mappings.find(e => contextKey(e.context) === contextKey(context))?.fingering; },
     save(context: FingeringContext, fingering: Fingering) { validateMapping(context, fingering); const store = read(), id = contextKey(context); store.mappings = store.mappings.filter(e => contextKey(e.context) !== id); store.mappings.push({ context, fingering }); write(store); },
     reset(context: FingeringContext) { const store = read(), id = contextKey(context); store.mappings = store.mappings.filter(e => contextKey(e.context) !== id); write(store); },

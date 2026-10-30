@@ -1,0 +1,12 @@
+.pp-editor { min-width: 0; }
+.pp-editor-neck { overflow-x: auto; max-width: 100%; background: #f3ead8; color: #302c23; touch-action: pan-x pan-y; }
+.pp-editor-neck > div { width: 2200px; }
+.pp-editor-neck svg { display: block; width: 2200px; }
+.pp-editor-neck .hoverDiv { cursor: crosshair; }
+.pp-editor button, .pp-editor select { min-height: 44px; font: inherit; }
+.pp-editor-keyboard { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.pp-editor-keyboard select { max-width: 100%; }
+.pp-editor-sequence { max-height: 18rem; overflow: auto; padding-left: 2rem; }
+.pp-editor-sequence li { margin-block: 6px; }
+.pp-editor-sequence button { min-width: 44px; }
+.pp-editor-neck .pp-editor-selected .dot-circle { fill: #e7ad45; stroke-width: 3; }

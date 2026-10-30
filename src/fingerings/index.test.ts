@@ -24,6 +24,12 @@ describe('minor parent mapping', () => {
     const doubleSharp: FingeringContext = { ...context, parentTonic: { letter: 'G', accidental: 1, pitchClass: 8 }, family: 'harmonic-minor' };
     expect(eventAt(doubleSharp, 1, 3).pitch).toEqual({ letter: 'F', accidental: 2, pitchClass: 7, octave: 4, midi: 67 });
   });
+  it('rejects out-of-collection and malformed coordinates', () => {
+    expect(() => eventAt(context, 1, 2)).toThrow('outside parent collection');
+    expect(() => eventAt(context, 0, 0)).toThrow('Invalid string or fret');
+    expect(() => eventAt(context, 1, 25)).toThrow('Invalid string or fret');
+    expect(() => eventAt(context, 1, 1.5)).toThrow('Invalid string or fret');
+  });
   it('can reimport its own backup near the collection size limit', () => {
     const raw = storage(), original = createFingeringStorage(raw);
     const contexts: FingeringContext[] = [

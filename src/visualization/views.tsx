@@ -4,7 +4,7 @@ import { Note } from '@tonaljs/tonal';
 import { Accidental, Formatter, Renderer, Stave, StaveNote, TabNote, TabStave, KeySignature, Voice } from 'vexflow';
 import type { Fingering, GuidedPractice } from '../contracts';
 import { modeMetadata, noteName } from '../theory';
-import { majorPosition, validateFingeringEvent, type MajorPosition } from './index';
+import { majorPosition, minorScaleMap, validateFingeringEvent, type MajorPosition } from './index';
 
 export function notationKeySignature(practice: GuidedPractice) {
   const key = noteName(practice.parentTonic) + (practice.family === 'major' ? '' : 'm');
@@ -74,6 +74,7 @@ function Notation({ practice, fingering }: { practice: GuidedPractice; fingering
 }
 export function ModeStaff({ practice }: { practice: GuidedPractice }) { return <Notation practice={practice}/>; }
 export function GuitarExercise({ practice, fingering }: { practice: GuidedPractice; fingering?: Fingering }) {
+  if (fingering?.review === 'rejected') return <p>Fingering rejected; exercise unavailable.</p>;
   if (!fingering || !fingering.events.length) return <p>Fingering and exercise pending review.</p>;
   for (const event of fingering.events) {
     if (!practice.mode.notes.some(note => note.pitchClass === event.pitch.pitchClass)) throw new RangeError('Fingering pitch is outside parent scale');
@@ -84,7 +85,8 @@ export function GuitarExercise({ practice, fingering }: { practice: GuidedPracti
 /** Major positions are upstream, unreviewed; minor positions require supplied events. */
 export function GuitarFretboard({ practice, position, fingering }: { practice: GuidedPractice; position: MajorPosition; fingering?: Fingering }) {
   const host = useRef<HTMLDivElement>(null);
-  const points = practice.family === 'major' ? majorPosition(practice.parentTonic, position) : (fingering?.events ?? []).map(event => { validateFingeringEvent(event); return { string: event.string, fret: event.fret, chroma: event.pitch.pitchClass }; });
+  const usable = fingering && fingering.review !== 'rejected' && fingering.events.length > 0;
+  const points = usable ? fingering.events.map(event => { validateFingeringEvent(event); return { string: event.string, fret: event.fret, chroma: event.pitch.pitchClass }; }) : practice.family === 'major' ? majorPosition(practice.parentTonic, position) : minorScaleMap(practice.parentTonic, practice.family);
   const metadata = modeMetadata(practice.family, practice.mode.degree);
   const labels = points.map(p => {
     const i = practice.mode.notes.findIndex(n => n.pitchClass === p.chroma);
@@ -98,11 +100,11 @@ export function GuitarFretboard({ practice, position, fingering }: { practice: G
     const el = host.current!;
     if (labels.length) {
       const fretCount = Math.max(15, ...labels.map(p => p.fret));
-      const board = new Fretboard({ el, fretCount, showFretNumbers: true, dotText: (p: { short: string }) => p.short, width: 800 });
+      const board = new Fretboard({ el, fretCount, showFretNumbers: true, dotFill: 'var(--pp-music-surface, #f3ead8)', dotStrokeColor: 'var(--pp-music-ink, #302c23)', dotText: (p: { short: string }) => p.short, width: 800 });
       board.setDots(labels).render();
       return () => { board.removeEventListeners(); el.replaceChildren(); };
     }
     return () => { el.replaceChildren(); };
   }, [labelKey]);
-  return <section><p>{practice.family === 'major' ? `fretboard.js ${position} major template; source-provided, not teacher-reviewed` : fingering?.events.length ? `Source: ${fingering.source}; review: ${fingering.review}` : 'Minor fingering pending review.'}</p><p>String 1 high E; fret 0 open. * marks modal tonic.</p><div ref={host} aria-hidden="true"/><p>{labels.map(p => `string ${p.string}, fret ${p.fret}: ${p.label}`).join('; ')}</p></section>;
+  return <section><p>{usable ? `Source: ${fingering.source}; review: ${fingering.review}` : practice.family === 'major' ? `fretboard.js ${position} major template; source-provided, not teacher-reviewed` : `Scale-note map, not a CAGED fingering; ${position} mapping pending${fingering?.review === 'rejected' ? ' (supplied mapping rejected)' : ''}.`}</p><p>String 1 high E; fret 0 open. * marks modal tonic.</p><div ref={host} aria-hidden="true"/><p>{labels.map(p => `string ${p.string}, fret ${p.fret}: ${p.label}`).join('; ')}</p></section>;
 }

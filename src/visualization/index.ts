@@ -1,6 +1,6 @@
 import { FretboardSystem, Systems } from '@moonwave99/fretboard.js';
 import { Note } from '@tonaljs/tonal';
-import type { FingeringEvent, SpelledPitchClass } from '../contracts';
+import type { FingeringEvent, SpelledPitchClass, ScaleFamily } from '../contracts';
 import { noteName } from '../theory';
 
 /** Library CAGED positions are upstream data, not teacher-reviewed fingerings. */
@@ -8,6 +8,13 @@ export type MajorPosition = 'C' | 'A' | 'G' | 'E' | 'D';
 export function majorPosition(parentTonic: SpelledPitchClass, position: MajorPosition) {
   if (!['C', 'A', 'G', 'E', 'D'].includes(position)) throw new RangeError('Invalid CAGED position');
   return new FretboardSystem({ fretCount: 24 }).getScale({ root: noteName(parentTonic), type: 'major', box: { system: Systems.CAGED, box: position } }).filter(point => point.inBox);
+}
+
+/** Full upstream parent collection; not a boxed fingering. */
+export function minorScaleMap(parentTonic: SpelledPitchClass, family: Exclude<ScaleFamily, 'major'>) {
+  const type = family === 'jazz-melodic-minor' ? 'melodic minor' : family === 'harmonic-minor' ? 'harmonic minor' : null;
+  if (!type) throw new RangeError('Invalid minor family');
+  return new FretboardSystem({ fretCount: 24 }).getScale({ root: noteName(parentTonic), type });
 }
 
 /** Guitar strings 1–6 run high E to low E. Pitch is sounding, not written octave. */

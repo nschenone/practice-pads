@@ -99,14 +99,15 @@ export function GuitarFretboard({ practice, position, fingering, neckView = 'pos
   const positionPoints = usable ? fingering.events.map(event => { validateFingeringEvent(event); return { string: event.string, fret: event.fret, chroma: event.pitch.pitchClass }; }) : practice.family === 'major' ? majorPosition(practice.parentTonic, position) : minorPosition(practice.parentTonic, practice.family, position);
   if (positionPoints.some(point => !practice.mode.notes.some(note => note.pitchClass === point.chroma))) throw new RangeError('Fingering pitch is outside parent scale');
   const selected = new Set(positionPoints.map(point => `${point.string}:${point.fret}`));
-  const points = (neckView === 'full' ? parentScaleMap(practice.parentTonic, practice.family) : positionPoints).map(point => ({ ...point, inPosition: selected.has(`${point.string}:${point.fret}`) }));
+  const lastFret = Math.max(0, ...positionPoints.map(point => point.fret));
+  const points = (neckView === 'full' ? parentScaleMap(practice.parentTonic, practice.family).filter(point => point.fret <= lastFret) : positionPoints).map(point => ({ ...point, inPosition: selected.has(`${point.string}:${point.fret}`) }));
   const metadata = modeMetadata(practice.family, practice.mode.degree);
   const labels = points.map(p => {
     const i = practice.mode.notes.findIndex(n => n.pitchClass === p.chroma);
     if (i < 0) throw new RangeError('Fingering pitch is outside parent scale');
     const note = practice.mode.notes[i];
     const roles = [neckView === 'full' && p.inPosition ? 'selected position' : '', i === 0 ? 'tonic' : '', practice.chord.tones.some(t => t.pitchClass === p.chroma) ? 'chord' : '', metadata.characteristicDegrees.includes(i + 1) ? 'distinctive' : ''].filter(Boolean);
-    return { ...p, label: `${noteName(note)} ${metadata.intervalLabels[i]}${roles.length ? ` (${roles.join(', ')})` : ''}`, short: noteName(note), tonic: i === 0 };
+    return { ...p, label: `${noteName(note)} ${metadata.intervalLabels[i]}${roles.length ? ` (${roles.join(', ')})` : ''}`, short: noteName(note), tonic: i === 0, disabled: neckView === 'full' && !p.inPosition };
   });
   const labelKey = JSON.stringify(labels);
   useEffect(() => {
@@ -114,7 +115,8 @@ export function GuitarFretboard({ practice, position, fingering, neckView = 'pos
     let board: Fretboard | undefined;
     let width = -1;
     const firstFret = Math.min(...labels.map(p => p.fret));
-    const fretCount = neckView === 'full' ? 24 : Math.max(4, Math.max(...labels.map(p => p.fret)) - Math.max(0, firstFret - 1));
+    // The library needs a nonzero frame even when every selected note is open.
+    const fretCount = neckView === 'full' ? Math.max(1, lastFret) : Math.max(4, Math.max(...labels.map(p => p.fret)) - Math.max(0, firstFret - 1));
     const minimumWidth = Math.max(400, fretCount * 44);
     const render = () => {
       const nextWidth = Math.max(minimumWidth - 40, el.clientWidth);
@@ -123,7 +125,7 @@ export function GuitarFretboard({ practice, position, fingering, neckView = 'pos
       board?.removeEventListeners();
       el.replaceChildren();
       if (!labels.length) return;
-      board = new Fretboard({ el, fretCount, crop: neckView === 'position', scaleFrets: false, showFretNumbers: true, dotFill: 'var(--pp-music-surface, #f3ead8)', dotStrokeColor: 'var(--pp-music-ink, #302c23)', dotText: (p: { short: string }) => p.short, width, height: 240, dotSize: 26, dotTextSize: 14 });
+      board = new Fretboard({ el, fretCount, crop: neckView === 'position', scaleFrets: false, showFretNumbers: neckView !== 'full' || lastFret > 0, dotFill: 'var(--pp-music-surface, #f3ead8)', dotStrokeColor: 'var(--pp-music-ink, #302c23)', dotText: (p: { short: string }) => p.short, width, height: 240, dotSize: 26, dotTextSize: 14, disabledOpacity: 0.3 });
       board.setDots(labels).render();
       if (neckView === 'full') board.style({ filter: { inPosition: true }, fill: '#e7c18e', 'stroke-width': 3, 'data-position': 'true' });
       board.style({ filter: { tonic: true }, fill: '#8dc6c0', 'data-tonic': 'true' });
@@ -133,6 +135,6 @@ export function GuitarFretboard({ practice, position, fingering, neckView = 'pos
     const observer = new ResizeObserver(render);
     observer.observe(el);
     return () => { observer.disconnect(); board?.removeEventListeners(); el.replaceChildren(); };
-  }, [labelKey, neckView]);
+  }, [labelKey, neckView, lastFret]);
   return <section><div className="pp-fretboard-scroll" ref={host} aria-hidden="true"/><p className="pp-visually-hidden">{neckView === 'full' ? 'Full neck; highlighted notes belong to the selected position. ' : ''}String 1 is high E; fret 0 is open. Teal marks the modal tonic. {labels.map(p => `string ${p.string}, fret ${p.fret}: ${p.label}`).join('; ')}.</p></section>;
 }

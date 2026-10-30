@@ -45,12 +45,17 @@ async page => {
   }
   assert(new Set(shapes).size === 5, 'five actual natural-minor shapes');
   const selectedCount = await page.locator('.pp-guitar .dot').count();
+  const highest = async () => Math.max(...Array.from((await coordinates()).matchAll(/:f(\d+)/g), match => Number(match[1])));
+  const lastFret = await highest();
   await page.getByRole('button', { name: 'Full neck', exact: true }).click();
-  assert(await page.locator('.pp-guitar .dot').count() === 90, 'whole A natural-minor scale through fret 24');
+  assert(await highest() === lastFret, 'full context stops at the selected position');
+  assert(await page.locator('.pp-guitar .dot').count() > selectedCount, 'background scale context retained');
   assert(await page.locator('.pp-guitar .dot-circle[data-position=true]').count() === selectedCount, 'selected shape highlighted in full context');
-  assert(await page.locator('.pp-guitar .dot-fret-24').count() === 6, 'full neck includes fret 24');
+  assert(await page.locator('.pp-guitar .dot').evaluateAll(dots => dots.every(dot => Number(dot.getAttribute('opacity')) === (dot.querySelector('[data-position=true]') ? 1 : 0.3))), 'whole context dots and labels faded, selected notes opaque');
+  assert(await page.locator('.pp-guitar .dot[opacity="0.3"]').count() > 0, 'non-focused notes present');
   await page.getByRole('button', { name: 'A shape (unreviewed)', exact: true }).click();
-  assert(await page.locator('.pp-guitar .dot').count() === 90, 'shape changes preserve full context');
+  const selectedHighest = await page.locator('.pp-guitar .dot:has([data-position=true])').evaluateAll(dots => Math.max(...dots.map(dot => Number(dot.getAttribute('class').match(/dot-fret-(\d+)/)[1]))));
+  assert(await highest() === selectedHighest && selectedHighest !== lastFret, 'shape changes update the neck endpoint');
   await page.reload();
   assert(await page.getByRole('button', { name: 'Full neck', exact: true }).getAttribute('aria-pressed') === 'true', 'full-neck preference survives reload');
   await page.getByRole('button', { name: 'Exercise notation and tab', exact: true }).click();
@@ -77,6 +82,17 @@ async page => {
   assert(await page.locator('.pp-guitar .dot-circle[data-position=true]').count() > 10, 'natural mapping does not leak to melodic minor');
   await family.selectOption('natural-minor');
   assert(await page.locator('.pp-guitar .dot-circle[data-position=true]').count() === 1, 'natural mapping restored');
+  assert(await highest() === 1, 'custom mapping sets the endpoint');
+  await page.getByRole('button', { name: 'Undo last note', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Keyboard note' }).selectOption('1:0');
+  await page.getByRole('button', { name: 'Add note', exact: true }).click();
+  await page.getByRole('button', { name: 'Save this position', exact: true }).click();
+  assert(await highest() === 0, 'open-only context contains no fretted notes');
+  assert(await page.locator('.pp-guitar svg').evaluate(svg => !/NaN|Infinity/.test(svg.outerHTML)), 'open-only frame has finite coordinates');
+  await page.getByRole('combobox', { name: 'Keyboard note' }).selectOption('1:24');
+  await page.getByRole('button', { name: 'Add note', exact: true }).click();
+  await page.getByRole('button', { name: 'Save this position', exact: true }).click();
+  assert(await highest() === 24, 'fret 24 appears only when the mapping uses it');
   const sizes = [];
   for (const width of [1280,1024,390]) {
     await page.setViewportSize({width,height:900});
@@ -86,5 +102,5 @@ async page => {
     await page.keyboard.press('Escape');
   }
   assert((await page.locator('.pp-player [role=status]').innerText()) === 'Stopped', 'no accidental playback on selection');
-  return {naturalMinorModes:7,minorShapes:5,coloredTonic:true,keyboardWedges:24,ownParentAndStorage:true,fullNeckAndHighlight:true,rememberedView:true,sizes};
+  return {naturalMinorModes:7,minorShapes:5,coloredTonic:true,keyboardWedges:24,ownParentAndStorage:true,fullNeckAndHighlight:true,fadedContext:true,positionBoundedRange:true,openOnly:true,rememberedView:true,sizes};
 }

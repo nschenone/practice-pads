@@ -1,5 +1,5 @@
-:root { font-family: system-ui, sans-serif; background: #171713; color: #f1eee5; }
+:root { font-family: system-ui, sans-serif; background: #171713; color: #f1eee5; --pp-music-surface: #f3ead8; --pp-music-ink: #302c23; }
 body { margin: 0; }
 .pp-study > section { min-width: 0; }
-.pp-study section section > div[aria-hidden="true"] { background: #fff; color: #171713; max-width: 100%; }
+.pp-study section section > div[aria-hidden="true"] { background: var(--pp-music-surface); color: var(--pp-music-ink); max-width: 100%; }
 .pp-visual svg { max-width: 100%; height: auto; }

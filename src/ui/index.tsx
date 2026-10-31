@@ -12,6 +12,7 @@ export type WorkspaceProps = {
   chord: string; modeName: string; notes: RelationshipNote[];
   status: PlaybackStatus; onPlay: () => void; onStop: () => void;
   preset: string; presets: Choice[]; onPreset: (value: string) => void; volume: number; onVolume: (value: number) => void;
+  voicing: 'close' | 'spread'; onVoicing: (value: 'close' | 'spread') => void;
   position: string; positions: Choice[]; onPosition: (value: string) => void;
   view: 'diagram' | 'exercise'; onView: (value: 'diagram' | 'exercise') => void;
   neckView?: 'position' | 'full'; onNeckView?: (value: 'position' | 'full') => void;
@@ -44,8 +45,8 @@ export function ParentKeyPicker({ parent, family, pairs, onSelect }: { parent: s
   }))}<text className="pp-key-label" x="190" y="178">Key</text><text className="pp-key-label pp-key-current" x="190" y="203">{parent}</text></svg></div></div>}</div>;
 }
 
-export function Player({ chord, modeName, status, onPlay, onStop, preset, presets, onPreset, volume, onVolume }: Pick<WorkspaceProps, 'chord' | 'modeName' | 'status' | 'onPlay' | 'onStop' | 'preset' | 'presets' | 'onPreset' | 'volume' | 'onVolume'>) {
-  return <section className="pp-panel pp-player" aria-label="Chord player"><div className="pp-now"><small>Selected chord</small><strong>{chord}</strong><span>{modeName}</span></div><button className="pp-play" type="button" onClick={status.state === 'playing' || status.state === 'starting' ? onStop : onPlay}>{status.state === 'playing' || status.state === 'starting' ? 'Stop' : status.state === 'error' ? 'Retry' : 'Play'}</button><div role="status" aria-live="polite">{status.state === 'stopped' ? 'Stopped' : status.state === 'starting' ? 'Starting audio…' : status.state === 'playing' ? 'Playing' : `Audio stopped: ${status.message}`}</div><label>Sound <select value={preset} onChange={e => onPreset(e.target.value)}>{presets.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select></label><label>Volume <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => onVolume(Number(e.target.value))}/></label></section>;
+export function Player({ chord, modeName, status, onPlay, onStop, preset, presets, onPreset, volume, onVolume, voicing, onVoicing }: Pick<WorkspaceProps, 'chord' | 'modeName' | 'status' | 'onPlay' | 'onStop' | 'preset' | 'presets' | 'onPreset' | 'volume' | 'onVolume' | 'voicing' | 'onVoicing'>) {
+  return <section className="pp-panel pp-player" aria-label="Chord player"><div className="pp-now"><small>Selected chord</small><strong>{chord}</strong><span>{modeName}</span></div><button className="pp-play" type="button" onClick={status.state === 'playing' || status.state === 'starting' ? onStop : onPlay}>{status.state === 'playing' || status.state === 'starting' ? 'Stop' : status.state === 'error' ? 'Retry' : 'Play'}</button><div role="status" aria-live="polite">{status.state === 'stopped' ? 'Stopped' : status.state === 'starting' ? 'Starting audio…' : status.state === 'playing' ? 'Playing' : `Audio stopped: ${status.message}`}</div><div className="pp-switch" role="group" aria-label="Chord voicing"><button type="button" aria-pressed={voicing === 'close'} onClick={() => onVoicing('close')}>Close</button><button type="button" aria-pressed={voicing === 'spread'} onClick={() => onVoicing('spread')}>Spread</button></div><label>Sound <select value={preset} onChange={e => onPreset(e.target.value)}>{presets.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}</select></label><label>Volume <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => onVolume(Number(e.target.value))}/></label></section>;
 }
 
 export function Relationship({ notes }: Pick<WorkspaceProps, 'notes'>) {

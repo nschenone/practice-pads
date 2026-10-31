@@ -33,6 +33,7 @@ export default function App() {
     catch { return 'position'; }
   });
   const [preset, setPreset] = useState<PadPreset>('Warm'); const [volume, setVolume] = useState(0.2);
+  const [voicing, setVoicing] = useState<'close' | 'spread'>('close');
   const [status, setStatus] = useState<PlaybackStatus>({ state: 'stopped' }); const [error, setError] = useState('');
   const engine = useRef<PadAudioEngine | null>(null);
   const data = useMemo(() => {
@@ -41,9 +42,9 @@ export default function App() {
       const chord = practice.chord;
       const modes = degrees.map(d => guidedPractice(pitch(parent), family, d, position));
       const metadata = modeMetadata(family, degree);
-      return { practice, chord, modes, metadata, voicing: playbackVoicing(chord), error: '' };
+      return { practice, chord, modes, metadata, voicing: playbackVoicing(chord, 3, voicing), error: '' };
     } catch (e) { return { error: e instanceof Error ? e.message : 'Unable to derive practice' }; }
-  }, [parent, family, degree, position]);
+  }, [parent, family, degree, position, voicing]);
   const mappingContext = useMemo(() => ({ parentTonic: pitch(parent), family, position }), [parent, family, position]);
   const mapping = useLocalMapping(mappingContext);
   useEffect(() => { const player = new PadAudioEngine(); engine.current = player; const unsubscribe = player.subscribe(setStatus); return () => { unsubscribe(); engine.current = null; player.dispose(); }; }, []);
@@ -58,7 +59,7 @@ export default function App() {
     modes={modes.map(p => ({ degree: p.mode.degree, chord: p.chord.symbol, name: `${noteName(p.mode.tonic)} ${p.mode.name}` }))} degree={degree} onMode={setDegree}
     chord={chord.symbol} modeName={`${noteName(practice.mode.tonic)} ${practice.mode.name}`}
     notes={practice.mode.notes.map((n, i) => ({ name: noteName(n), interval: metadata.intervalLabels[i], tonic: i === 0, chordTone: chord.tones.some(t => t.pitchClass === n.pitchClass), distinctiveRole: metadata.characteristicDegrees.includes(i + 1) ? `Distinctive ${metadata.intervalLabels[i]}` : undefined }))}
-    status={status} onPlay={() => { if (engine.current) void engine.current.play().catch(e => setError(String(e))); }} onStop={() => engine.current?.stop()} preset={preset} presets={padPresets.map(p => ({ value: p, label: p }))} onPreset={p => setPreset(p as PadPreset)} volume={volume} onVolume={setVolume}
+    voicing={voicing} onVoicing={setVoicing} status={status} onPlay={() => { if (engine.current) void engine.current.play().catch(e => setError(String(e))); }} onStop={() => engine.current?.stop()} preset={preset} presets={padPresets.map(p => ({ value: p, label: p }))} onPreset={p => setPreset(p as PadPreset)} volume={volume} onVolume={setVolume}
     position={position} positions={positions.map(p => ({ value: p, label: `${p} shape (unreviewed)` }))} onPosition={p => setPosition(p as MajorPosition)} view={view} onView={setView} neckView={neckView} onNeckView={next => { setNeckView(next); try { window.localStorage.setItem('practice-pads-neck-view', next); } catch { setError('View changed, but this browser could not save the preference.'); } }}
     configuration={<LocalMappingControls practice={practice} context={mappingContext} mapping={mapping}/>}
     notation={<VisualError key={`${parent}-${family}-${degree}`}><ModeStaff practice={practice}/></VisualError>} fretboard={<VisualError key={`${parent}-${family}`} resetKey={`${degree}-${position}`}><GuitarFretboard practice={practice} position={position} fingering={mapping.value} neckView={neckView} overviewLastFret={mapping.overviewLastFret}/></VisualError>} exercise={<VisualError key={`${parent}-${family}-${degree}`}><GuitarExercise practice={practice} fingering={mapping.value}/></VisualError>} /></>;

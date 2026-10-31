@@ -5,14 +5,23 @@ const mock = vi.hoisted(() => {
   type Bank = { attack: number[]; release: number[]; active: number[]; allocated: number; dropped: number; disposed: boolean };
   const banks: Bank[] = [];
   const gains: { values: number[]; disposed: boolean }[] = [];
+  const reverbs: { wet: number[]; disposed: boolean }[] = [];
+  const effects: { disposed: boolean }[] = [];
+  let reverbReady: Promise<void> = Promise.resolve();
   const callbacks = new Map<number, () => void>();
   let id = 0;
   const raw = { state: 'running', addEventListener: vi.fn(), removeEventListener: vi.fn() };
   const context = { rawContext: raw, lookAhead: 0.1, setTimeout: vi.fn((fn: () => void) => { callbacks.set(++id, fn); return id; }), clearTimeout: vi.fn((key: number) => { callbacks.delete(key); }) };
-  return { banks, gains, raw, context, callbacks, start: vi.fn(), flush: () => { const pending = [...callbacks.values()]; callbacks.clear(); pending.forEach(fn => fn()); } };
+  return { banks, gains, reverbs, effects, raw, context, callbacks, start: vi.fn(), setReverbReady: (ready: Promise<void>) => { reverbReady = ready; }, getReverbReady: () => reverbReady, flush: () => { const pending = [...callbacks.values()]; callbacks.clear(); pending.forEach(fn => fn()); } };
 });
 vi.mock('tone', () => ({
-  start: mock.start, getContext: () => mock.context, Synth: class {},
+  start: mock.start, getContext: () => mock.context, Synth: class {}, FMSynth: class {},
+  Reverb: class { item: { wet: number[]; disposed: boolean }; wet: { rampTo: (value: number) => void }; ready: Promise<void>;
+    constructor(options: { wet: number }) { this.item = { wet: [options.wet], disposed: false }; mock.reverbs.push(this.item); this.wet = { rampTo: value => this.item.wet.push(value) }; this.ready = mock.getReverbReady(); }
+    connect() { return this; } dispose() { this.item.disposed = true; }
+  },
+  Filter: class { item = { disposed: false }; constructor() { mock.effects.push(this.item); } connect() { return this; } dispose() { this.item.disposed = true; } },
+  Chorus: class { item = { disposed: false }; constructor() { mock.effects.push(this.item); } start() { return this; } connect() { return this; } dispose() { this.item.disposed = true; } },
   Gain: class {
     item: { values: number[]; disposed: boolean };
     gain: { linearRampTo: (value: number, duration: number) => void };
@@ -22,6 +31,7 @@ vi.mock('tone', () => ({
   PolySynth: class {
     item = { attack: [] as number[], release: [] as number[], active: [] as number[], allocated: 0, dropped: 0, disposed: false };
     max: number;
+    volume = { value: 0 };
     constructor(options: { maxPolyphony: number }) { this.max = options.maxPolyphony; mock.banks.push(this.item); }
     connect() { return this; }
     triggerAttack(n: number) {
@@ -38,7 +48,7 @@ const chord = (...midis: number[]): PlaybackVoicing => ({ pitches: midis.map(mid
 const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 const deferred = () => { let resolve!: () => void; let reject!: (e: Error) => void; const promise = new Promise<void>((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
 let engine: PadAudioEngine; let statuses: PlaybackStatus[];
-beforeEach(() => { mock.banks.length = 0; mock.gains.length = 0; mock.callbacks.clear(); mock.raw.state = 'running'; vi.clearAllMocks(); mock.start.mockResolvedValue(undefined); engine = new PadAudioEngine(); statuses = []; engine.subscribe(s => statuses.push(s)); });
+beforeEach(() => { mock.banks.length = 0; mock.gains.length = 0; mock.reverbs.length = 0; mock.effects.length = 0; mock.setReverbReady(Promise.resolve()); mock.callbacks.clear(); mock.raw.state = 'running'; vi.clearAllMocks(); mock.start.mockResolvedValue(undefined); engine = new PadAudioEngine(); statuses = []; engine.subscribe(s => statuses.push(s)); });
 describe('PadAudioEngine', () => {
   it('is initially silent and retains exact enharmonic MIDI pitches but not octaves', async () => {
     engine.setVoicing(chord(61, 64)); expect(mock.banks).toHaveLength(0); await engine.play(); await engine.play();
@@ -90,6 +100,46 @@ describe('PadAudioEngine', () => {
     (mock.raw.addEventListener.mock.calls[0][1] as () => void)();
     expect(mock.banks[0].disposed).toBe(true);
     expect(mock.gains.every(g => g.disposed)).toBe(true); stale(); expect(mock.banks).toHaveLength(1);
+  });
+  it('keeps the same held notes while switching through both new sustained presets', async () => {
+    engine.setVoicing(chord(60, 64, 67, 71)); await engine.play();
+    engine.setPreset('Lush pad'); mock.flush(); expect(mock.banks[1].active).toEqual([60, 64, 67, 71].map(hz));
+    expect(mock.effects).toHaveLength(2);
+    engine.setPreset('Electric keys'); mock.flush(); expect(mock.banks[2].active).toEqual([60, 64, 67, 71].map(hz));
+    expect(mock.effects.slice(0, 2).every(effect => effect.disposed)).toBe(true);
+    engine.dispose(); mock.flush(); expect(mock.effects.every(effect => effect.disposed)).toBe(true);
+    expect(mock.reverbs[0].disposed).toBe(true);
+  });
+  it('ramps bounded reverb and cancels startup while its impulse loads', async () => {
+    engine.setReverb(0.8); engine.setVoicing(chord(60));
+    const ready = deferred(); mock.setReverbReady(ready.promise);
+    const pending = engine.play(); await Promise.resolve(); await Promise.resolve();
+    expect(mock.reverbs[0].wet[0]).toBe(0.4); expect(mock.banks).toHaveLength(0);
+    engine.setReverb(0); expect(mock.reverbs[0].wet.at(-1)).toBe(0);
+    engine.stop(); ready.resolve(); await pending; expect(mock.banks).toHaveLength(0);
+    expect(statuses.at(-1)?.state).toBe('stopped');
+    expect(() => engine.setReverb(NaN)).toThrow(RangeError);
+    await engine.play(); expect(mock.banks).toHaveLength(1);
+  });
+  it('a second Play still waits for reverb after Stop cancels its first startup', async () => {
+    const ready = deferred(); mock.setReverbReady(ready.promise); engine.setVoicing(chord(60));
+    const first = engine.play(); await Promise.resolve(); await Promise.resolve();
+    engine.stop(); const second = engine.play(); await Promise.resolve(); await Promise.resolve();
+    expect(mock.banks).toHaveLength(0); expect(mock.reverbs).toHaveLength(1);
+    ready.resolve(); await Promise.all([first, second]);
+    expect(mock.banks).toHaveLength(1); expect(statuses.at(-1)?.state).toBe('playing');
+  });
+  it('dispose during reverb startup cannot create a bank or revive audio', async () => {
+    const ready = deferred(); mock.setReverbReady(ready.promise);
+    const pending = engine.play(); await Promise.resolve(); await Promise.resolve();
+    engine.dispose(); ready.resolve(); await pending;
+    expect(mock.banks).toHaveLength(0); expect(mock.reverbs[0].disposed).toBe(true);
+    expect(mock.gains.every(gain => gain.disposed)).toBe(true);
+  });
+  it('retries after reverb loading fails', async () => {
+    mock.setReverbReady(Promise.reject(new Error('Impulse failed')));
+    await engine.play(); expect(statuses.at(-1)?.state).toBe('error'); expect(mock.reverbs[0].disposed).toBe(true);
+    mock.setReverbReady(Promise.resolve()); await engine.play(); expect(statuses.at(-1)?.state).toBe('playing');
   });
   it('clamps volume and rejects malformed, sparse and excessive voicings without changing notes', async () => {
     engine.setVolume(-1); engine.setVoicing(chord(60)); await engine.play(); expect(mock.gains[0].values[0]).toBe(0); engine.setVolume(2); expect(mock.gains[0].values.at(-1)).toBe(0.12);

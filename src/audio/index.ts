@@ -1,7 +1,7 @@
 import * as Tone from 'tone';
 import type { PlaybackStatus, PlaybackVoicing } from '../contracts';
 
-export const padPresets = ['Warm', 'Airy', 'Glass', 'Dark', 'Organ'] as const;
+export const padPresets = ['Warm', 'Airy', 'Glass', 'Dark', 'Organ', 'Lush pad', 'Electric keys'] as const;
 export type PadPreset = typeof padPresets[number];
 const settings = {
   Warm: { oscillator: { type: 'sine' as const }, envelope: { attack: 0.5, decay: 0.4, sustain: 0.7, release: 1.2 } },
@@ -9,6 +9,8 @@ const settings = {
   Glass: { oscillator: { type: 'sine' as const }, envelope: { attack: 0.15, decay: 1.2, sustain: 0.45, release: 1.5 } },
   Dark: { oscillator: { type: 'triangle' as const }, envelope: { attack: 0.8, decay: 0.5, sustain: 0.45, release: 1.4 } },
   Organ: { oscillator: { type: 'sine' as const }, envelope: { attack: 0.12, decay: 0.2, sustain: 0.8, release: 0.5 } },
+  'Lush pad': { oscillator: { type: 'fatsawtooth' as const, count: 3, spread: 16 }, envelope: { attack: 1.8, decay: 0.8, sustain: 0.8, release: 3 } },
+  'Electric keys': { oscillator: { type: 'sine' as const }, modulation: { type: 'sine' as const }, harmonicity: 2, modulationIndex: 3, envelope: { attack: 0.02, decay: 1.3, sustain: 0.55, release: 2 }, modulationEnvelope: { attack: 0.01, decay: 0.65, sustain: 0.12, release: 1.3 } },
 };
 const MAX_NOTES = 8;
 const MAX_VOICES = 16;
@@ -23,12 +25,16 @@ export class PadAudioEngine {
   private held = new Set<number>();
   private preset: PadPreset = 'Warm';
   private volume = 0.5;
+  private reverbAmount = 0.12;
   private generation = 0;
   private disposed = false;
   private pending: Promise<void> | undefined;
   private gain?: Tone.Gain;
-  private synth?: Tone.PolySynth;
+  private synth?: Tone.PolySynth<Tone.Synth> | Tone.PolySynth<Tone.FMSynth>;
   private bankGain?: Tone.Gain;
+  private filter?: Tone.Filter;
+  private chorus?: Tone.Chorus;
+  private reverb?: Tone.Reverb;
   // Count every attack, not just active notes: released voices remain allocated until silent.
   private attacks = 0;
   private transition?: number;
@@ -45,6 +51,7 @@ export class PadAudioEngine {
   };
   private finishDispose() {
     this.raw?.removeEventListener('statechange', this.onState);
+    this.reverb?.dispose(); this.reverb = undefined;
     this.gain?.dispose(); this.gain = undefined;
   }
   private publish(status: PlaybackStatus) {
@@ -81,15 +88,23 @@ export class PadAudioEngine {
     this.held = new Set(this.notes);
   }
   private createBank() {
-    this.bankGain = new Tone.Gain(0).connect(this.gain!);
-    this.synth = new Tone.PolySynth({ voice: Tone.Synth, maxPolyphony: MAX_VOICES, options: settings[this.preset] }).connect(this.bankGain);
+    this.bankGain = new Tone.Gain(0).connect(this.reverb!);
+    this.synth = this.preset === 'Electric keys'
+      ? new Tone.PolySynth({ voice: Tone.FMSynth, maxPolyphony: MAX_VOICES, options: settings['Electric keys'] })
+      : new Tone.PolySynth({ voice: Tone.Synth, maxPolyphony: MAX_VOICES, options: settings[this.preset] });
+    if (this.preset === 'Lush pad' || this.preset === 'Electric keys') {
+      this.filter = new Tone.Filter(this.preset === 'Lush pad' ? 1250 : 6000, 'lowpass');
+      this.chorus = new Tone.Chorus({ frequency: 0.35, delayTime: 4, depth: 0.55, wet: this.preset === 'Lush pad' ? 0.5 : 0.15 }).start();
+      this.synth.connect(this.filter); this.filter.connect(this.chorus); this.chorus.connect(this.bankGain);
+      this.synth.volume.value = this.preset === 'Electric keys' ? 9 : 0;
+    } else this.synth.connect(this.bankGain);
     this.bankGain.gain.linearRampTo(1, FADE_SECONDS);
   }
   private destroyBank() {
     if (this.transition !== undefined) Tone.getContext().clearTimeout(this.transition);
     this.transition = undefined; this.transitionVersion++;
-    this.synth?.dispose(); this.bankGain?.dispose();
-    this.synth = undefined; this.bankGain = undefined; this.attacks = 0; this.held.clear();
+    this.synth?.dispose(); this.filter?.dispose(); this.chorus?.dispose(); this.bankGain?.dispose();
+    this.synth = undefined; this.filter = undefined; this.chorus = undefined; this.bankGain = undefined; this.attacks = 0; this.held.clear();
   }
   private fadeBank() {
     if (!this.synth || this.transition !== undefined) return;
@@ -115,6 +130,11 @@ export class PadAudioEngine {
     this.volume = Math.max(0, Math.min(1, volume));
     this.gain?.gain.linearRampTo(this.volume * 0.12, 0.05);
   }
+  setReverb(amount: number): void {
+    if (!Number.isFinite(amount)) throw new RangeError('Reverb must be finite');
+    this.reverbAmount = Math.max(0, Math.min(0.4, amount));
+    this.reverb?.wet.rampTo(this.reverbAmount, 0.05);
+  }
   play(): Promise<void> {
     if (this.disposed) return Promise.reject(new Error('Audio engine disposed'));
     if (this.status.state === 'playing') return Promise.resolve();
@@ -125,17 +145,24 @@ export class PadAudioEngine {
     // Invoke start synchronously in the gesture, before any asynchronous work.
     let activation: Promise<void>;
     try { activation = Tone.start(); } catch (error) { activation = Promise.reject(error); }
-    const pending = activation.then(() => {
+    const pending = activation.then(async () => {
       if (this.disposed || generation !== this.generation) return;
       const raw = Tone.getContext().rawContext as AudioContext;
       if (raw.state !== 'running') throw new Error('Audio context is not running');
       if (!this.raw) { this.raw = raw; raw.addEventListener('statechange', this.onState); }
       if (!this.gain) this.gain = new Tone.Gain(this.volume * 0.12).toDestination();
+      if (!this.reverb) this.reverb = new Tone.Reverb({ decay: 2.5, wet: this.reverbAmount }).connect(this.gain);
+      await this.reverb.ready;
+      if (this.disposed || generation !== this.generation) return;
+      if (raw.state !== 'running') throw new Error('Audio context is not running');
       if (!this.synth) this.createBank();
       if (this.transition === undefined) this.sync();
       this.publish({ state: 'playing' });
     }).catch((error: unknown) => {
-      if (!this.disposed && generation === this.generation) this.publish({ state: 'error', message: error instanceof Error ? error.message : 'Audio activation failed' });
+      if (!this.disposed && generation === this.generation) {
+        this.destroyBank(); this.reverb?.dispose(); this.reverb = undefined;
+        this.publish({ state: 'error', message: error instanceof Error ? error.message : 'Audio activation failed' });
+      }
     }).finally(() => { if (this.pending === pending) this.pending = undefined; });
     this.pending = pending;
     return pending;

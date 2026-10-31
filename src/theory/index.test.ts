@@ -158,12 +158,14 @@ describe('theory', () => {
     for (const tonic of SUPPORTED_TONICS) for (const family of SCALE_FAMILIES) for (let degree = 1; degree <= 7; degree++) {
       const chord = literalChord(deriveMode(tonic, family, degree as ModeDegree));
       const close = playbackVoicing(chord);
-      const spread = playbackVoicing(chord, 3, 'spread').pitches;
       expect(playbackVoicing(chord, 3, 'close')).toEqual(close);
-      expect(spread).toHaveLength(5);
-      expect(spread.map(p => p.midi)).toEqual([...spread.map(p => p.midi)].sort((a, b) => a - b));
-      expect(spread.every(p => p.midi >= 0 && p.midi <= 127 && Note.get(`${noteName(p)}${p.octave}`).midi === p.midi)).toBe(true);
-      expect(names(spread).sort()).toEqual([noteName(chord.root), ...names(chord.tones)].sort());
+      for (const octave of [3, 4, 5]) {
+        const spread = playbackVoicing(chord, octave, 'spread').pitches;
+        expect(spread).toHaveLength(5);
+        expect(spread.map(p => p.midi)).toEqual([...spread.map(p => p.midi)].sort((a, b) => a - b));
+        expect(spread.every(p => p.midi >= 0 && p.midi <= 127 && Note.get(`${noteName(p)}${p.octave}`).midi === p.midi)).toBe(true);
+        expect(names(spread).sort()).toEqual([noteName(chord.root), ...names(chord.tones)].sort());
+      }
     }
   });
   it('rejects malformed spread inputs and MIDI overflow while preserving close validation', () => {

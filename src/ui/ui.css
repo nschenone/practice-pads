@@ -22,6 +22,7 @@
 .pp-notes li[data-tonic=true]{border-color:#8dc6c0}.pp-notes li[data-tonic=true] strong,.pp-tonic-key{color:#8dc6c0}
 .pp-legend{font-size:12px;color:#ded4c2;margin-top:8px!important}
 .pp-shell button,.pp-shell select{min-height:44px}.pp-circle button{width:44px;height:44px}
+.pp-octave{align-items:center}
 .pp-guitar .pp-switch{margin-top:10px}.pp-neck-view{align-items:center;flex-wrap:wrap}.pp-neck-view small{margin-left:6px}
 @media(max-width:1100px){.pp-study{grid-template-columns:1fr}}
 @media(max-width:900px){.pp-mode-study{grid-template-columns:1fr}}

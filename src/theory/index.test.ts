@@ -119,6 +119,63 @@ describe('theory', () => {
       expect(() => playbackVoicing({ ...chord, tones: undefinedTone })).toThrow(RangeError);
     }
   });
+  it('matches the supplied C spread MIDI without adding dominant tensions', () => {
+    const fixtures = [
+      ['maj7', ['C3:48', 'C4:60', 'G4:67', 'B4:71', 'E5:76']],
+      ['m(maj7)', ['C3:48', 'C4:60', 'G4:67', 'B4:71', 'Eb5:75']],
+      ['m7b5', ['C3:48', 'C4:60', 'Gb4:66', 'Bb4:70', 'Eb5:75']],
+      ['7', ['C3:48', 'G3:55', 'C4:60', 'E4:64', 'Bb4:70']],
+    ] as const;
+    expect(playbackVoicing(constructChord(c, 'maj7')).pitches.map(p => p.midi)).toEqual([48, 52, 55, 59]);
+    for (const [quality, expected] of fixtures) {
+      const chord = constructChord(c, quality);
+      expect(playbackVoicing(chord, 3, 'spread').pitches.map(p => `${noteName(p)}${p.octave}:${p.midi}`)).toEqual(expected);
+      expect(chord.tones).toEqual(constructChord(c, quality).tones);
+    }
+    const superlocrian = literalChord(deriveMode(SUPPORTED_TONICS[1], 'jazz-melodic-minor', 7));
+    expect(superlocrian.symbol).toBe('Cm7b5');
+    expect(playbackVoicing(superlocrian, 3, 'spread').pitches.map(p => p.midi)).toEqual([48, 60, 66, 70, 75]);
+    expect(playbackVoicing(constructChord(d, 'maj7'), 3, 'spread').pitches.map(p => `${noteName(p)}${p.octave}:${p.midi}`)).toEqual(['D3:50', 'D4:62', 'A4:69', 'C#5:73', 'F#5:78']);
+    expect(playbackVoicing(constructChord(d, '7'), 3, 'spread').pitches.map(p => p.midi)).toEqual([50, 57, 62, 66, 72]);
+  });
+  it('projects unsupported spread qualities with only literal tones and a doubled bass', () => {
+    for (const quality of ['m7', 'maj7#5', 'dim7'] as const) {
+      const chord = constructChord(c, quality);
+      const close = playbackVoicing(chord).pitches;
+      const spread = playbackVoicing(chord, 3, 'spread').pitches;
+      expect(spread.map(p => p.midi)).toEqual([close[0].midi, close[0].midi + 12, ...close.slice(1).map(p => p.midi + 12)]);
+      expect(spread.map(p => noteName(p))).toEqual([noteName(chord.root), ...chord.tones.map(noteName)]);
+    }
+  });
+  it('preserves close defaults and spelled chord tones for every parent, mode and quality', () => {
+    for (const root of SUPPORTED_TONICS) for (const quality of ['maj7', 'm7', '7', 'm7b5', 'm(maj7)', 'maj7#5', 'dim7'] as const) {
+      const chord = constructChord(root, quality);
+      const spread = playbackVoicing(chord, 3, 'spread').pitches;
+      expect(spread).toHaveLength(5);
+      expect(names(spread).sort()).toEqual([noteName(root), ...names(chord.tones)].sort());
+      expect(spread.every(p => p.midi >= 0 && p.midi <= 127 && Note.get(`${noteName(p)}${p.octave}`).midi === p.midi)).toBe(true);
+    }
+    for (const tonic of SUPPORTED_TONICS) for (const family of SCALE_FAMILIES) for (let degree = 1; degree <= 7; degree++) {
+      const chord = literalChord(deriveMode(tonic, family, degree as ModeDegree));
+      const close = playbackVoicing(chord);
+      const spread = playbackVoicing(chord, 3, 'spread').pitches;
+      expect(playbackVoicing(chord, 3, 'close')).toEqual(close);
+      expect(spread).toHaveLength(5);
+      expect(spread.map(p => p.midi)).toEqual([...spread.map(p => p.midi)].sort((a, b) => a - b));
+      expect(spread.every(p => p.midi >= 0 && p.midi <= 127 && Note.get(`${noteName(p)}${p.octave}`).midi === p.midi)).toBe(true);
+      expect(names(spread).sort()).toEqual([noteName(chord.root), ...names(chord.tones)].sort());
+    }
+  });
+  it('rejects malformed spread inputs and MIDI overflow while preserving close validation', () => {
+    const chord = constructChord(c, 'maj7');
+    expect(() => playbackVoicing(chord, 3, 'wide' as never)).toThrow(RangeError);
+    expect(() => playbackVoicing({ ...chord, symbol: 'C7' }, 3, 'spread')).toThrow(RangeError);
+    expect(() => playbackVoicing(chord, 8, 'spread')).toThrow(RangeError);
+    expect(() => playbackVoicing(chord, -2, 'spread')).toThrow(RangeError);
+    expect(playbackVoicing(chord, -1, 'spread').pitches.every(p => p.midi >= 0)).toBe(true);
+    const bSharp: SpelledPitchClass = { letter: 'B', accidental: 1, pitchClass: 0 };
+    expect(playbackVoicing(constructChord(bSharp, 'm7'), 3, 'spread').pitches.map(p => `${noteName(p)}${p.octave}:${p.midi}`)).toEqual(['B#3:60', 'B#4:72', 'D#5:75', 'F##5:79', 'A#5:82']);
+  });
   it('computes written octave crossing and MIDI', () => {
     const bSharp: SpelledPitchClass = { letter: 'B', accidental: 1, pitchClass: 0 };
     const voicing = playbackVoicing(constructChord(bSharp, 'm7'), 3);

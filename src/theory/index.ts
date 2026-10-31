@@ -96,9 +96,10 @@ export function compatibleCandidates(root: SpelledPitchClass, quality: ChordQual
   }
   return result;
 }
-/** Ascending close-position chord, with root at the specified written octave. */
-export function playbackVoicing(chord: Chord, rootOctave = 3): PlaybackVoicing {
+/** Close is the existing four-tone default. Spread doubles the bass root; the three referenced qualities raise the third, dominant 7 lowers the fifth relative to the upper root, and unreferenced qualities conservatively keep all four literal tones above the bass. */
+export function playbackVoicing(chord: Chord, rootOctave = 3, variant: 'close' | 'spread' = 'close'): PlaybackVoicing {
   if (!Number.isInteger(rootOctave)) throw new RangeError('Invalid octave');
+  if (variant !== 'close' && variant !== 'spread') throw new RangeError('Invalid voicing variant');
   if (!chord || typeof chord !== 'object') throw new RangeError('Invalid chord');
   const expected = constructChord(chord.root, chord.quality);
   if (chord.symbol !== expected.symbol || !Array.isArray(chord.tones) || chord.tones.length !== 4) throw new RangeError('Inconsistent chord');
@@ -115,5 +116,16 @@ export function playbackVoicing(chord: Chord, rootOctave = 3): PlaybackVoicing {
     if (parsed.empty || parsed.oct === undefined || parsed.midi === null || parsed.midi === undefined) throw new RangeError('Pitch outside MIDI range');
     return { ...fromTonal(parsed.pc), octave: parsed.oct, midi: parsed.midi };
   });
-  return { pitches };
+  if (variant === 'close') return { pitches };
+  const offsets = chord.quality === '7' ? [0, 12, 0, 12]
+    : chord.quality === 'maj7' || chord.quality === 'm(maj7)' || chord.quality === 'm7b5' ? [0, 24, 12, 12]
+    : [0, 12, 12, 12];
+  const raised = pitches.map((pitch, i) => {
+    const octave = pitch.octave + offsets[i] / 12, midi = pitch.midi + offsets[i];
+    if (midi > 127) throw new RangeError('Pitch outside MIDI range');
+    return { ...pitch, octave, midi };
+  });
+  const upperRoot = { ...pitches[0], octave: pitches[0].octave + 1, midi: pitches[0].midi + 12 };
+  if (upperRoot.midi > 127) throw new RangeError('Pitch outside MIDI range');
+  return { pitches: [...raised, upperRoot].sort((a, b) => a.midi - b.midi) };
 }

@@ -20,6 +20,24 @@ describe('theory', () => {
       expect(literalChord(mode).tones).toEqual([mode.notes[0], mode.notes[2], mode.notes[4], mode.notes[6]]);
     }});
   });
+  it('labels all 28 modes with literal ninths, elevenths and thirteenths', () => {
+    const expected = [
+      '9, 11, 13', '9, 11, 13', 'b9, 11, b13', '9, #11, 13', '9, 11, 13', '9, 11, b13', 'b9, 11, b13',
+      '9, 11, 13', 'b9, 11, 13', '9, #11, 13', '9, #11, 13', '9, 11, b13', '9, 11, b13', 'b9, b11, b13',
+      '9, 11, b13', 'b9, 11, 13', '9, 11, 13', '9, #11, 13', 'b9, 11, b13', '#9, #11, 13', 'b9, b11, b13',
+    ];
+    SCALE_FAMILIES.forEach((family, fi) => { for (let i = 0; i < 7; i++) {
+      expect(modeMetadata(family, (i + 1) as ModeDegree).extensionLabels.join(', ')).toBe(expected[family === 'natural-minor' ? (i + 5) % 7 : fi * 7 + i]);
+    }});
+    const lydian = guidedPractice(c, 'major', 4);
+    expect(lydian.chord.symbol).toBe('Fmaj7');
+    expect(modeMetadata('major', 4).extensionLabels).toEqual(['9', '#11', '13']);
+    expect(playbackVoicing(lydian.chord, 4).pitches.map(p => p.midi)).toEqual([65, 69, 72, 76]);
+    const superlocrian = guidedPractice(d, 'jazz-melodic-minor', 7);
+    expect(superlocrian.chord.symbol).toBe('C#m7b5');
+    expect(modeMetadata('jazz-melodic-minor', 7).extensionLabels).toEqual(['b9', 'b11', 'b13']);
+    expect(playbackVoicing(superlocrian.chord, 4).pitches).toHaveLength(4);
+  });
   it('offers natural minor as its own parent and modal family', () => {
     const a = SUPPORTED_TONICS.find(n => noteName(n) === 'A')!;
     const practice = guidedPractice(a, 'natural-minor', 1, 'E');

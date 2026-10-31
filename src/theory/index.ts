@@ -51,14 +51,16 @@ export function deriveMode(parentTonic: SpelledPitchClass, family: ScaleFamily, 
   return { family, degree, name: data.names[index], tonic: { ...rotated[0] }, notes: rotated };
 }
 /** Labels and characteristic degrees are relative to the mode tonic; degrees are one-based. */
-export function modeMetadata(family: ScaleFamily, degree: ModeDegree): { aliases: string[]; intervalLabels: string[]; characteristicDegrees: number[] } {
+export function modeMetadata(family: ScaleFamily, degree: ModeDegree): { aliases: string[]; intervalLabels: string[]; extensionLabels: string[]; characteristicDegrees: number[] } {
   const data = familyData(family), index = degreeIndex(degree);
   const intervalLabels = modalIntervals(data.scale, index).map(interval => {
     const { alt, num } = Interval.get(interval);
     if (alt === undefined || num === undefined) throw new RangeError('Invalid interval');
     return (alt < 0 ? 'b'.repeat(-alt) : '#'.repeat(alt)) + num;
   });
-  return { aliases: [...data.aliases[index]], intervalLabels, characteristicDegrees: [...data.characteristics[index]] };
+  // Descriptive mode degrees, not curated tensions or additional playback notes.
+  const extensionLabels = [1, 3, 5].map(i => intervalLabels[i].replace(/\d+$/, degree => String(Number(degree) + 7)));
+  return { aliases: [...data.aliases[index]], intervalLabels, extensionLabels, characteristicDegrees: [...data.characteristics[index]] };
 }
 export function constructChord(root: SpelledPitchClass, quality: ChordQuality): Chord {
   validateNote(root);

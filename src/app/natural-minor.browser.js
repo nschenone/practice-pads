@@ -15,7 +15,7 @@ async page => {
   assert(await page.getByRole('button', { name: 'Parent tonic A', exact: true }).count() === 1, 'own A minor parent');
   await page.locator('.pp-modes button').first().click();
   assert((await page.locator('.pp-notes strong').allTextContents()).join() === 'A,B,C,D,E,F,G', 'A natural-minor notes');
-  assert(await page.locator('.pp-now strong').innerText() === 'Am7', 'natural-minor tonic chord');
+  assert(await page.locator('.pp-now strong').innerText() === 'Am7 (9, 11, b13)', 'natural-minor tonic chord and mode extensions');
   assert((await page.locator('.pp-modes button').nth(4).innerText()).includes('Em7'), 'minor V, not E7');
   await openCircle();
   await page.keyboard.press('Escape');

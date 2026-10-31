@@ -2,6 +2,9 @@
 async page => {
   const assert = (value, message) => { if (!value) throw new Error(message); };
   await page.reload();
+  const sound = page.getByLabel('Sound');
+  assert(await sound.inputValue() === 'Lush pad', 'Lush pad is the default sound');
+  assert(JSON.stringify((await sound.locator('option').allTextContents()).slice(0, 2)) === JSON.stringify(['Lush pad', 'Electric keys']), 'preferred preset order');
   const octave = page.getByRole('group', { name: 'Chord octave' });
   const up = octave.getByRole('button', { name: 'Up one octave' });
   const down = octave.getByRole('button', { name: 'Down one octave' });

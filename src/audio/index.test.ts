@@ -43,7 +43,7 @@ vi.mock('tone', () => ({
     dispose() { this.item.disposed = true; this.item.active = []; }
   },
 }));
-import { PadAudioEngine } from './index';
+import { PadAudioEngine, padPresets } from './index';
 const chord = (...midis: number[]): PlaybackVoicing => ({ pitches: midis.map(midi => ({ midi, octave: 4, letter: 'C', accidental: 0, pitchClass: 0 })) });
 const hz = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 const deferred = () => { let resolve!: () => void; let reject!: (e: Error) => void; const promise = new Promise<void>((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
@@ -51,8 +51,9 @@ let engine: PadAudioEngine; let statuses: PlaybackStatus[];
 beforeEach(() => { mock.banks.length = 0; mock.gains.length = 0; mock.reverbs.length = 0; mock.effects.length = 0; mock.setReverbReady(Promise.resolve()); mock.callbacks.clear(); mock.raw.state = 'running'; vi.clearAllMocks(); mock.start.mockResolvedValue(undefined); engine = new PadAudioEngine(); statuses = []; engine.subscribe(s => statuses.push(s)); });
 describe('PadAudioEngine', () => {
   it('is initially silent and retains exact enharmonic MIDI pitches but not octaves', async () => {
+    expect(padPresets.slice(0, 2)).toEqual(['Lush pad', 'Electric keys']);
     engine.setVoicing(chord(61, 64)); expect(mock.banks).toHaveLength(0); await engine.play(); await engine.play();
-    expect(mock.start).toHaveBeenCalledTimes(1); const bank = mock.banks[0];
+    expect(mock.start).toHaveBeenCalledTimes(1); expect(mock.effects).toHaveLength(2); const bank = mock.banks[0];
     engine.setVoicing({ pitches: [{ letter: 'D', accidental: -1, pitchClass: 1, octave: 4, midi: 61 }, ...chord(73).pitches] });
     expect(bank.release).toEqual([hz(64)]); expect(bank.attack).toEqual([hz(61), hz(64), hz(73)]);
   });
@@ -102,7 +103,7 @@ describe('PadAudioEngine', () => {
     expect(mock.gains.every(g => g.disposed)).toBe(true); stale(); expect(mock.banks).toHaveLength(1);
   });
   it('keeps the same held notes while switching through both new sustained presets', async () => {
-    engine.setVoicing(chord(60, 64, 67, 71)); await engine.play();
+    engine.setPreset('Warm'); engine.setVoicing(chord(60, 64, 67, 71)); await engine.play();
     engine.setPreset('Lush pad'); mock.flush(); expect(mock.banks[1].active).toEqual([60, 64, 67, 71].map(hz));
     expect(mock.effects).toHaveLength(2);
     engine.setPreset('Electric keys'); mock.flush(); expect(mock.banks[2].active).toEqual([60, 64, 67, 71].map(hz));

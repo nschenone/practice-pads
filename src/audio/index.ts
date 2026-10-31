@@ -1,7 +1,7 @@
 import * as Tone from 'tone';
 import type { PlaybackStatus, PlaybackVoicing } from '../contracts';
 
-export const padPresets = ['Warm', 'Airy', 'Glass', 'Dark', 'Organ', 'Lush pad', 'Electric keys'] as const;
+export const padPresets = ['Lush pad', 'Electric keys', 'Warm', 'Airy', 'Glass', 'Dark', 'Organ'] as const;
 export type PadPreset = typeof padPresets[number];
 const settings = {
   Warm: { oscillator: { type: 'sine' as const }, envelope: { attack: 0.5, decay: 0.4, sustain: 0.7, release: 1.2 } },
@@ -23,7 +23,7 @@ export class PadAudioEngine {
   private listeners = new Set<(status: PlaybackStatus) => void>();
   private notes = new Set<number>();
   private held = new Set<number>();
-  private preset: PadPreset = 'Warm';
+  private preset: PadPreset = padPresets[0];
   private volume = 0.5;
   private reverbAmount = 0.12;
   private generation = 0;

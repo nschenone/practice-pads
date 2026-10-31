@@ -32,7 +32,7 @@ export default function App() {
     try { return window.localStorage.getItem('practice-pads-neck-view') === 'full' ? 'full' : 'position'; }
     catch { return 'position'; }
   });
-  const [preset, setPreset] = useState<PadPreset>('Warm'); const [volume, setVolume] = useState(0.2);
+  const [preset, setPreset] = useState<PadPreset>(padPresets[0]); const [volume, setVolume] = useState(0.2);
   const [voicing, setVoicing] = useState<'close' | 'spread'>('close');
   const [rootOctave, setRootOctave] = useState(4); const [reverb, setReverb] = useState(0.12);
   const [status, setStatus] = useState<PlaybackStatus>({ state: 'stopped' }); const [error, setError] = useState('');
